@@ -38,7 +38,7 @@ Section array.
     iDestruct ("IH" $! (l offset{ly}ₗ 1) with "[//] [Hb2] Htys") as (vs') "(Hl' & Hsz & Htys)".
     { by rewrite /offset_loc Z.mul_1_r. }
     iDestruct "Hsz" as %Hsz. iExists (v' ++ vs').
-    rewrite /has_layout_val heap_mapsto_app Hszv offset_loc_1 take_app_length' // drop_app_length' // app_length Hszv Hsz.
+    rewrite /has_layout_val heap_mapsto_app Hszv offset_loc_1 take_app_length' // drop_app_length' // length_app Hszv Hsz.
     iFrame. iPureIntro. rewrite /ly_size/= -/(ly_size _). lia.
   Qed.
   Next Obligation.
@@ -48,15 +48,15 @@ Section array.
     { rewrite Nat.mul_0_r right_id. by iApply heap_mapsto_loc_in_bounds_0. }
     move: Hlys. intros [? ?]%Forall_cons. iDestruct "Htys" as "[Hty Htys]".
     rewrite -{1}(take_drop (ly_size ly) v).
-    rewrite offset_loc_0 heap_mapsto_app take_length_le ?Hv; last by repeat unfold ly_size => /=; lia.
+    rewrite offset_loc_0 heap_mapsto_app length_take_le ?Hv; last by repeat unfold ly_size => /=; lia.
     iDestruct "Hl" as "[Hl Hl']".
     iDestruct (heap_mapsto_loc_in_bounds with "Hl") as "#Hb1".
     iDestruct (ty_ref with "[] Hl Hty") as "$" => //.
     setoid_rewrite offset_loc_S. rewrite offset_loc_1.
     iDestruct ("IH" with "[//] [] [] Hl' Htys") as "[#Hb2 $]".
-    { iPureIntro. rewrite /has_layout_val drop_length Hv. by repeat unfold ly_size => /=; lia. }
+    { iPureIntro. rewrite /has_layout_val length_drop Hv. by repeat unfold ly_size => /=; lia. }
     { iPureIntro. by apply has_layout_loc_ly_mult_offset. }
-    iApply loc_in_bounds_split_mul_S. rewrite take_length min_l; first by eauto.
+    iApply loc_in_bounds_split_mul_S. rewrite length_take min_l; first by eauto.
     rewrite Hv. repeat unfold ly_size => /=; lia.
   Qed.
   Next Obligation. iIntros (??????[?[-> ?]]) "?". done. Qed.
@@ -172,7 +172,7 @@ Section array.
         rewrite /has_layout_loc /layout_wf /aligned_to. case_match => //. destruct l as [? a].
         move => /= [? ->] [? ->]. eexists. by rewrite -Z.mul_add_distr_r. }
       rewrite {2}/ty_own/=. iDestruct "Hty" as (v1 Hv1 Hl1 _) "Hv1".
-      iExists (v1 ++ v2). rewrite heap_mapsto_own_state_app Hv1 /has_layout_val app_length Hv1 Hv2.
+      iExists (v1 ++ v2). rewrite heap_mapsto_own_state_app Hv1 /has_layout_val length_app Hv1 Hv2.
       iFrame. rewrite Forall_forall. iPureIntro. split_and! => //.
       rewrite {2 3}/ly_size/=. lia.
     - iDestruct 1 as (v Hv Hl _) "Hl". iSplit => //.
@@ -181,21 +181,21 @@ Section array.
         iApply loc_in_bounds_shorten; last by iApply heap_mapsto_own_state_loc_in_bounds. lia. }
       setoid_rewrite offset_loc_S. setoid_rewrite offset_loc_1. rewrite offset_loc_0.
       rewrite -(take_drop (ly.(ly_size)) v) heap_mapsto_own_state_app.
-      iDestruct "Hl" as "[Hl Hr]". rewrite take_length_le ?Hv; last by repeat unfold ly_size => /=; lia.
+      iDestruct "Hl" as "[Hl Hr]". rewrite length_take_le ?Hv; last by repeat unfold ly_size => /=; lia.
       iDestruct (heap_mapsto_own_state_loc_in_bounds with "Hl") as "#Hbl".
       iDestruct (heap_mapsto_own_state_loc_in_bounds with "Hr") as "#Hbr".
       iDestruct ("IH" with "[] [] Hr") as "[Hb HH]".
-      { iPureIntro. rewrite /has_layout_val drop_length Hv. repeat unfold ly_size => /=; lia. }
+      { iPureIntro. rewrite /has_layout_val length_drop Hv. repeat unfold ly_size => /=; lia. }
       { iPureIntro. by apply has_layout_loc_ly_mult_offset. }
       iSplitR.
       + iClear "IH". iApply loc_in_bounds_split_mul_S.
-        rewrite take_length min_l; last first.
+        rewrite length_take min_l; last first.
         { rewrite Hv. repeat unfold ly_size => /=; lia. }
-        iFrame "Hbl". rewrite replicate_length drop_length Hv.
+        iFrame "Hbl". rewrite length_replicate length_drop Hv.
         destruct ly as [k?]. repeat unfold ly_size => /=.
         have ->: (k * n = k * S n - k)%nat by lia. done.
       + iSplitL "Hl"; last done. iExists _. iFrame. iPureIntro. rewrite Forall_forall. split_and! => //.
-        rewrite /has_layout_val take_length_le ?Hv; repeat unfold ly_size => /=; lia.
+        rewrite /has_layout_val length_take_le ?Hv; repeat unfold ly_size => /=; lia.
   Qed.
 
   Lemma simplify_hyp_uninit_array ly l β n T:
@@ -264,7 +264,7 @@ Section array.
     iApply ("HP" $! ty with "[//] Hl"). iIntros (l' ty2 β2 typ R) "Hl' Htyp HT".
     iApply ("HΦ" with "Hl' [-HT] HT"). iIntros (ty') "Hl'".
     iMod ("Htyp" with "Hl'") as "[? $]".
-    iSplitR => //. iSplitR; first by rewrite insert_length. by iApply "Hc".
+    iSplitR => //. iSplitR; first by rewrite length_insert. by iApply "Hc".
   Qed.
   Definition type_place_array_inst := [instance type_place_array].
   Global Existing Instance type_place_array_inst.

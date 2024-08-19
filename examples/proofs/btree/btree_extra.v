@@ -91,7 +91,7 @@ Lemma last_is_lookup_last {A} (l : list A) :
   last l = l !! (length l - 1)%nat.
 Proof.
   case l using rev_ind; first done.
-  rewrite last_snoc app_length /=.
+  rewrite last_snoc length_app /=.
   assert (length l + 1 - 1 = length l)%nat as -> by lia.
   symmetry. by apply list_lookup_middle.
 Qed.
@@ -207,7 +207,7 @@ Section defs.
   Proof.
     assert (x :: l1 = l2 ++ l1 → [x] = l2); last (split; by naive_solver). move => Heq.
     assert (length (x :: l1) = length (l2 ++ l1)) as Hlen by by rewrite Heq.
-    rewrite /= app_length in Hlen. assert (length l2 = 1%nat) as ? by lia.
+    rewrite /= length_app in Hlen. assert (length l2 = 1%nat) as ? by lia.
     destruct l2 as [|? l2]; first by inversion H0.
     destruct l2 as [|? l2]; last by inversion H0.
     by inversion Heq.
@@ -371,7 +371,7 @@ Section defs.
       { exists (take (length ks) cs).
         rewrite -[X in X = _](take_drop_middle _ _ _ Hd).
         do 2 f_equal. apply skipn_all2. lia. }
-      rewrite app_length /= in Hlen2.
+      rewrite length_app /= in Hlen2.
       assert (length cs' = length ks) as Hlen3.
       { destruct (decide (length ks = length cs')); by lia. }
       clear Hlen2. rename Hlen3 into Hlen2.
@@ -426,7 +426,7 @@ Section defs.
         rewrite list_lookup_fmap in Hm.
         assert (j < i)%nat.
         { apply mk_is_Some in Hm. move: Hm => /fmap_is_Some /lookup_lt_is_Some.
-          rewrite take_length. lia. }
+          rewrite length_take. lia. }
         rewrite lookup_take in Hm; last done.
         assert (∃ dj, cs !! j = Some dj) as [dj Hdj].
         { destruct (cs !! j) eqn:HEq; [ by eauto | by inversion Hm ]. }

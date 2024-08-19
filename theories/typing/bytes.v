@@ -48,10 +48,10 @@ Section bytewise.
     iDestruct "Hl" as "[Hl1 Hl2]". iSplitL "Hl1".
     - iExists _. iFrame.
       eapply Forall_take in HP. rewrite /has_layout_val in Hv.
-      by rewrite /has_layout_val take_length min_l // Hv.
-    - rewrite take_length_le ?Hv //. iExists _. iFrame.
+      by rewrite /has_layout_val length_take min_l // Hv.
+    - rewrite length_take_le ?Hv //. iExists _. iFrame.
       eapply Forall_drop in HP. eapply has_layout_ly_offset in Hl.
-      by rewrite /has_layout_val drop_length Hv.
+      by rewrite /has_layout_val length_drop Hv.
   Qed.
 
   Lemma merge_bytewise l β P ly1 ly2:
@@ -65,7 +65,7 @@ Section bytewise.
     iDestruct 1 as (v1 Hv1 Hl1 HP1) "Hl1".
     iDestruct 1 as (v2 Hv2 Hl2 HP2) "Hl2".
     iExists (v1 ++ v2).
-    rewrite heap_mapsto_own_state_app Hv1 /has_layout_val app_length Hv1 Hv2.
+    rewrite heap_mapsto_own_state_app Hv1 /has_layout_val length_app Hv1 Hv2.
     iFrame. iPureIntro. split_and!.
     - rewrite {2}/ly_size/=. lia.
     - by apply: has_layout_loc_trans'.

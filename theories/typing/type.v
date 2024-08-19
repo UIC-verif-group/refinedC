@@ -224,7 +224,7 @@ Section own_state.
     l ↦[β] (v1 ++ v2) ⊣⊢ l ↦[β] v1 ∗ (l +ₗ length v1) ↦[β] v2.
   Proof.
     destruct β; rewrite /= ?heap_mapsto_app //.
-    rewrite big_sepL_app app_length -loc_in_bounds_split.
+    rewrite big_sepL_app length_app -loc_in_bounds_split.
     setoid_rewrite shift_loc_assoc_nat.
     iSplit; iIntros "[[??][??]]"; iFrame.
   Qed.

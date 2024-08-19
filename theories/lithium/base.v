@@ -148,8 +148,8 @@ Ltac evalZ :=
 
 
 Create HintDb simplify_length discriminated.
-Global Hint Rewrite rev_length app_length @take_length @drop_length @cons_length @nil_length : simplify_length.
-Global Hint Rewrite @insert_length : simplify_length.
+Global Hint Rewrite rev_length @length_app @length_take @length_drop @length_cons @length_nil : simplify_length.
+Global Hint Rewrite @length_insert : simplify_length.
 Ltac simplify_length :=
   autorewrite with simplify_length.
 
@@ -511,9 +511,9 @@ Section list_subequiv.
     list_subequiv ig (<[j := x]>l1) l2 ↔ list_subequiv ig l1 l2.
   Proof.
     unfold list_subequiv. move => ?. split => Hs i; move: (Hs i) => [<- H].
-    - split; first by rewrite insert_length. move => ?.
+    - split; first by rewrite length_insert. move => ?.
       rewrite -H; last done. rewrite list_lookup_insert_ne; naive_solver.
-    - split; first by rewrite insert_length. move => ?.
+    - split; first by rewrite length_insert. move => ?.
       rewrite list_lookup_insert_ne; naive_solver.
   Qed.
 
@@ -532,9 +532,9 @@ Section list_subequiv.
   Proof.
     move => ??. unfold list_subequiv. split.
     - move => Hs. move: (Hs j) => [<- <-]//. rewrite list_lookup_insert //. split => // i.
-      rewrite insert_length. split => // Hi. move: (Hs i) => [? <-];[|set_solver].
+      rewrite length_insert. split => // Hi. move: (Hs i) => [? <-];[|set_solver].
       rewrite list_lookup_insert_ne //. set_solver.
-    - rewrite insert_length. move => [? Hs] i. split; first by move: (Hs 0) => [? _]//.
+    - rewrite length_insert. move => [? Hs] i. split; first by move: (Hs 0) => [? _]//.
       case: (decide (i = j)) => [->|?].
       + by rewrite list_lookup_insert.
       + rewrite list_lookup_insert_ne//. move: (Hs i) => [? H]// ?. apply H. set_solver.
@@ -544,9 +544,9 @@ Section list_subequiv.
     list_subequiv ig (l1 ++ l3) (l2 ++ l3) ↔ list_subequiv ig l1 l2.
   Proof.
   rewrite /list_subequiv. split => H i; move: (H i) => [Hlen Hlookup].
-  - rewrite app_length app_length in Hlen. split; first by lia.
+  - rewrite length_app length_app in Hlen. split; first by lia.
     move => /Hlookup. apply lookup_eq_app_r. by lia.
-  - split; first by rewrite app_length app_length Hlen.
+  - split; first by rewrite length_app length_app Hlen.
     move => /Hlookup. apply lookup_eq_app_r. by lia.
   Qed.
 
@@ -555,7 +555,7 @@ Section list_subequiv.
     list_subequiv ig (f <$> l1) (f <$> l2).
   Proof.
     move => Hs i. move: (Hs 0%nat) => [Hlen _].
-    do 2 rewrite fmap_length. split => // ?. rewrite !list_lookup_fmap.
+    do 2 rewrite length_fmap. split => // ?. rewrite !list_lookup_fmap.
     f_equal. move: (Hs i) => [_ ?]. naive_solver.
   Qed.
 
@@ -579,7 +579,7 @@ Section list_subequiv.
     - move => Hsub. split; apply list_eq => n; move: (Hsub n) => Hn; set_unfold.
       + destruct (decide (n < i)%nat).
         * rewrite !lookup_take; by naive_solver lia.
-        * rewrite !lookup_ge_None_2 // take_length; lia.
+        * rewrite !lookup_ge_None_2 // length_take; lia.
       + rewrite !lookup_drop. apply Hsub. set_unfold. lia.
     - move => [Ht Hd] n. split; first done.
       move => ?. have ? : (n ≠ i) by set_solver.
@@ -613,7 +613,7 @@ Section sep_list.
     destruct (lookup_lt_is_Some_2 l i Hl) as [y Hy].
     rewrite big_sepL_delete; [| by apply list_lookup_insert].
     rewrite insert_take_drop // -{3}(take_drop_middle l i y) // !big_sepL_app /=.
-    do 3 f_equiv. rewrite take_length. case_decide => //. lia.
+    do 3 f_equiv. rewrite length_take. case_decide => //. lia.
   Qed.
 
 Lemma big_sepL_impl' {B} Φ (Ψ : _ → B → _) (l1 : list A) (l2 : list B) :
@@ -641,7 +641,7 @@ End sep_list.
     iIntros (Hlen1 Hlen2) "Hl #Himpl".
     rewrite !big_sepL2_alt. iDestruct "Hl" as (Hl1) "Hl".
     iSplit. { iPureIntro. congruence. }
-    iApply (big_sepL_impl' with "Hl"). { rewrite !zip_with_length. lia. }
+    iApply (big_sepL_impl' with "Hl"). { rewrite !length_zip_with. lia. }
     iIntros "!>" (k [x1 x2] [y1 y2]).
     rewrite !lookup_zip_with_Some.
     iDestruct 1 as %(?&?&?&?).

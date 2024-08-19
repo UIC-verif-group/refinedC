@@ -32,7 +32,7 @@ Ltac normalize_autorewrite :=
 
 #[export] Hint Rewrite @drop_0 @take_ge using can_solve : lithium_rewrite.
 #[export] Hint Rewrite @take_app_le @drop_app_ge using can_solve : lithium_rewrite.
-#[export] Hint Rewrite @insert_length @app_length @fmap_length @rotate_length @replicate_length @drop_length : lithium_rewrite.
+#[export] Hint Rewrite @length_insert @length_app @length_fmap @length_rotate @length_replicate @length_drop : lithium_rewrite.
 #[export] Hint Rewrite <- @fmap_take @fmap_drop : lithium_rewrite.
 #[export] Hint Rewrite @list_insert_fold : lithium_rewrite.
 #[export] Hint Rewrite @list_insert_insert : lithium_rewrite.
@@ -81,16 +81,16 @@ Proof. done. Qed.
 
 Lemma normalize_fmap_length A B (f : A → B) l r p `{!Normalize p (length l) r} :
   Normalize true (length (f <$> l)) r.
-Proof. by rewrite fmap_length. Qed.
+Proof. by rewrite length_fmap. Qed.
 Global Hint Extern 5 (Normalize _ (length (_ <$> _)) _) => class_apply normalize_fmap_length : typeclass_instances.
 Lemma normalize_insert_length A i (x : A) l r p `{!Normalize p (length l) r} :
   Normalize true (length (<[i:=x]> l)) r.
-Proof. by rewrite insert_length. Qed.
+Proof. by rewrite length_insert. Qed.
 Global Hint Extern 5 (Normalize _ (length (<[_:=_]> _)) _) => class_apply normalize_insert_length : typeclass_instances.
 Lemma normalize_app_length A (l1 l2 : list A) r1 r2 r3 p1 p2 p3
        `{!Normalize p1 (length l1) r1} `{!Normalize p2 (length l2) r2} `{!Normalize p3 (r1 + r2)%nat r3}:
   Normalize true (length (l1 ++ l2)) r3.
-Proof. unfold Normalize in *; subst. by rewrite app_length. Qed.
+Proof. unfold Normalize in *; subst. by rewrite length_app. Qed.
 Global Hint Extern 5 (Normalize _ (length (_ ++ _)) _) => class_apply normalize_app_length : typeclass_instances.
 Lemma normalize_app_assoc A (l1 l2 l3 : list A) r1 r2 p1 p2
        `{!Normalize p1 (l2 ++ l3) r1} `{!Normalize p2 (l1 ++ r1) r2}:
@@ -118,11 +118,11 @@ Proof. unfold Normalize in *; subst. by rewrite Nat.sub_0_r. Qed.
 Global Hint Extern 5 (Normalize _ (_ - 0)%nat _) => class_apply normalize_minus_n_O : typeclass_instances.
 Lemma normalize_rotate_length A n (l : list A) r p `{!Normalize p (length l) r} :
   Normalize true (length (rotate n l)) r.
-Proof. by rewrite rotate_length. Qed.
+Proof. by rewrite length_rotate. Qed.
 Global Hint Extern 5 (Normalize _ (length (rotate _ _)) _) => class_apply normalize_rotate_length : typeclass_instances.
 Lemma normalize_replicate_length A n (l : list A) :
   Normalize true (length (replicate n l)) n.
-Proof. by rewrite replicate_length. Qed.
+Proof. by rewrite length_replicate. Qed.
 Global Hint Extern 5 (Normalize _ (length (replicate _ _)) _) => class_apply normalize_replicate_length : typeclass_instances.
 
 Ltac normalize_tc :=

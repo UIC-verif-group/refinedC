@@ -161,7 +161,7 @@ Section function.
     iDestruct ("Hfn" $! lsa' lsv') as "#Hm". iClear "Hfn". unfold introduce_typed_stmt.
     iExists _. iSplitR "Hr HΦ" => /=.
     - iFrame. iApply ("Hm" with "[-]"). 2:{
-        iPureIntro. rewrite !app_length. f_equal => //. rewrite Hlen1 Hlen3. by eapply Forall2_length.
+        iPureIntro. rewrite !length_app. f_equal => //. rewrite Hlen1 Hlen3. by eapply Forall2_length.
       } iClear "Hm". iFrame.
       move: Hlen1 Hly. move: (lsa' : list _) => lsa'' Hlen1 Hly. clear lsa' Hall.
       move: Hlen3 Hl. move: (fp_atys (fp x)) => atys Hlen3 Hl.
@@ -261,7 +261,7 @@ Section function_extra.
     { rewrite take_0 !drop_0. by iFrame. }
     { iIntros "!>" (i x2 ? ls' ?). iIntros "[-> Hinv] HT".
       have [|??]:= lookup_lt_is_Some_2 lsa i. {
-        rewrite vec_to_list_length. by apply: lookup_lt_Some. }
+        rewrite length_vec_to_list. by apply: lookup_lt_Some. }
       erewrite drop_S; [|done]. erewrite (drop_S _ _ i); [|done] => /=.
       iDestruct "Hinv" as "[Hl $]". iDestruct ("HT" with "[$]") as "HT". iExists _. iFrame.
       by erewrite take_S_r.
@@ -279,7 +279,7 @@ Section function_extra.
     rewrite -Hlen in lsa *.
     iDestruct ("Htyp_f1" $! a1) as "{Htyp_f1} (_ & #Htyp_f1)".
     iSpecialize ("Htyp_f1" $! lsa lsv).
-    rewrite !zip_with_length !take_ge ?vec_to_list_length; [|lia..].
+    rewrite !length_zip_with !take_ge ?length_vec_to_list; [|lia..].
     iSpecialize ("Htyp_f1" with "[$]").
     iApply (introduce_typed_stmt_wand with "Htyp_f1").
     iIntros (v ty) "Hret1 Hty" => /=.
@@ -361,7 +361,7 @@ Section inline_function.
     iIntros "!#" (lsa lsv Hly) "Ha Hv".
     iAssert ⌜length lsa = length (f_args fn)⌝%I as %Hlen1. {
       iDestruct (big_sepL2_length with "Ha") as %->.
-      iPureIntro. move: Hall => /Forall2_length ->. by rewrite fmap_length.
+      iPureIntro. move: Hall => /Forall2_length ->. by rewrite length_fmap.
     }
     iDestruct (big_sepL2_length with "Hv") as %Hlen2.
     move: Hl Hall Hly. move: {1 2 3}(f_args fn) => alys Hl Hall Hly.
@@ -394,7 +394,7 @@ Section inline_function.
     simplify_eq/=.
     rewrite /introduce_typed_stmt !right_id_L.
     iExists _. iSplitR "HΦ" => /=.
-    - iFrame. iApply ("HT" with "[-]"). iPureIntro. rewrite !app_length -Hlen1 -Hlen2 !app_length/=. lia.
+    - iFrame. iApply ("HT" with "[-]"). iPureIntro. rewrite !length_app -Hlen1 -Hlen2 !length_app/=. lia.
     - iIntros (v). iDestruct 1 as (x') "[Hv [Hls HPr]]".
       iDestruct (big_sepL2_app_inv with "Hls") as "[$ $]".
       { left. by rewrite -Hlen1 right_id_L.  }

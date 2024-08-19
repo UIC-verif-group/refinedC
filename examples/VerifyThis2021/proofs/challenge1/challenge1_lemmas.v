@@ -135,7 +135,7 @@ Lemma delete_drop A (l : list A) i j :
 Proof.
   move => ?.
   rewrite !delete_take_drop drop_drop drop_app_le.
-  2: { rewrite take_length. lia. }
+  2: { rewrite length_take. lia. }
   rewrite skipn_firstn_comm. do 2 f_equal; lia.
 Qed.
 
@@ -153,7 +153,7 @@ Lemma exists_snoc {A} (l : list A) :
   ∃ x, l = take (length l - 1) l ++ [x].
 Proof.
   elim/rev_ind: l => //=. { lia. }
-  move => ????. eexists _. f_equal. rewrite take_app_length'// app_length/=. lia.
+  move => ????. eexists _. f_equal. rewrite take_app_length'// length_app/=. lia.
 Qed.
 
 
@@ -193,7 +193,7 @@ Proof.
   - move => [|] //=; naive_solver.
   - move => x1 l IH l2 HSorted /=.
     rewrite rev_app_distr/=. destruct l2 => //=.
-    { move => /Permutation_length. rewrite app_length /=. lia. }
+    { move => /Permutation_length. rewrite length_app /=. lia. }
     case_bool_decide; simplify_eq => Hcons.
     + apply: IH; [by apply: StronglySorted_app_inv_l|].
       rewrite <-Permutation_cons_append in Hcons.
@@ -252,7 +252,7 @@ Proof. unfold swap. by move => -> ->. Qed.
 Lemma swap_app_l i j A1 A2 :
   (i < length A1)%nat → (j < length A1)%nat →
   swap i j (A1 ++ A2) = swap i j A1 ++ A2.
-Proof. move => ??. rewrite /swap !lookup_app_l // !insert_app_l ?insert_length//. Qed.
+Proof. move => ??. rewrite /swap !lookup_app_l // !insert_app_l ?length_insert//. Qed.
 Lemma swap_app_r i j A1 A2 :
   (length A1 ≤ i)%nat → (length A1 ≤ j)%nat →
   swap i j (A1 ++ A2) = A1 ++ swap (i - length A1)%nat (j - length A1)%nat A2.
@@ -440,7 +440,7 @@ Proof.
     all: try done.
     all: try lia.
     (* TODO: simplify this proof using simplify_list *)
-    rewrite swap_app_r ?take_length; [ |lia..].
+    rewrite swap_app_r ?length_take; [ |lia..].
     rewrite swap_app_r //=; [ |lia..].
     do 2 f_equal.
     rewrite Nat.min_l; [ |lia].
@@ -448,28 +448,28 @@ Proof.
     have ->: ((S j - (s - 1) - 1) = j + 1 - s)%nat by lia.
     have -> : ((length A - 1 - S j) = length A - j - 2)%nat by lia.
     have ?: ((i - s - 1) ≤ (j + 1 - s))%nat by lia.
-    rewrite swap_app_r ?rev_length ?take_length ?drop_length ?insert_length//=.
+    rewrite swap_app_r ?rev_length ?length_take ?length_drop ?length_insert//=.
     2, 3: rewrite Nat.min_l; lia.
-    rewrite swap_app_l ?rev_length ?take_length ?drop_length ?insert_length//=.
+    rewrite swap_app_l ?rev_length ?length_take ?length_drop ?length_insert//=.
     2, 3: rewrite ?Nat.min_l; [|lia..]; lia.
     rewrite Nat.min_l; [|lia].
     have ->: (i - s - 1 - (length A - j - 2) = 0)%nat by lia.
     have ->: (S (j + 1) - Init.Nat.pred i = S (S (j + 1 - i)))%nat by lia.
     pose proof (swap_start_end 0 ((j + 1 - s - (length A - j - 2)))%nat (take (S (S (j + 1 - i))) (drop (Init.Nat.pred i) (<[xx:=xxx]> A)))) as [?[?[? [? ->]]]].
     { done. }
-    { rewrite ?take_length ?drop_length ?insert_length. rewrite Nat.min_l; lia. }
+    { rewrite ?length_take ?length_drop ?length_insert. rewrite Nat.min_l; lia. }
     { lia. }
-    rewrite take_length drop_length insert_length Nat.min_l; [|lia].
+    rewrite length_take length_drop length_insert Nat.min_l; [|lia].
     simpl.
     rewrite !skipn_firstn_comm drop_drop take_take.
     rewrite Nat.min_l. 2: lia.
     move Hl: ((<[xx:=xxx]> A)) => l.
-    have ?: length l = length A by rewrite -Hl insert_length.
+    have ?: length l = length A by rewrite -Hl length_insert.
     have ->: (take (length A - 1 - j) (drop (j + 1) l) =
             x0 :: take (length A - j - 2) (drop (S (j + 1)) l)
              ). {
       revert select (take _ _ !! (length _ - 1)%nat = Some _).
-      rewrite take_length drop_length insert_length lookup_take?lookup_drop ?Hl; [|lia] => Htake.
+      rewrite length_take length_drop length_insert lookup_take?lookup_drop ?Hl; [|lia] => Htake.
       have ->: (length A - 1 - j = S (length A - j - 2))%nat by lia.
       erewrite drop_S => /=//. rewrite -Htake. f_equal. lia.
     }
@@ -503,7 +503,7 @@ Proof.
   rewrite rev_app_distr. f_equal.
   - f_equal. rewrite drop_drop.
     rewrite firstn_skipn_comm. f_equal; [lia|].
-    rewrite take_ge // insert_length. lia.
+    rewrite take_ge // length_insert. lia.
   - destruct (decide ((j + 1 - i) = 0)%nat) as [Heq|?].
     + rewrite Heq take_0/=. f_equal. rewrite take_drop. f_equal.
       f_equal. lia.
@@ -511,7 +511,7 @@ Proof.
       rewrite Heq/=. rewrite take_drop.
       have ->: ((j + 1 - s) = (S (i - s)))%nat by lia.
       move Hl: ((<[_:=_]> A)) => l.
-      have [|? Hp]:= lookup_lt_is_Some_2 l i. { rewrite -Hl insert_length. lia. }
+      have [|? Hp]:= lookup_lt_is_Some_2 l i. { rewrite -Hl length_insert. lia. }
       erewrite drop_S => //=.
       erewrite (take_S_r _ (i - s)%nat). 2: {
         rewrite lookup_drop.
@@ -581,7 +581,7 @@ Proof.
       have -> : (S (s - 1) + (e - s))%nat = e => //. lia.
     }
     constructor.
-    rewrite !delete_drop ?insert_length; [|lia..]. f_equiv; [lia|].
+    rewrite !delete_drop ?length_insert; [|lia..]. f_equiv; [lia|].
     rewrite !delete_take_drop take_insert ?drop_insert_gt; [|lia..].
     do 2 f_equal; lia.
   - simpl. case_bool_decide; [lia|]. by case_bool_decide.
@@ -611,7 +611,7 @@ Proof.
            erewrite <-(list_insert_id (drop s A) (e - s)) at 2. 2:{
              rewrite lookup_drop. have -> : (s + (e - s))%nat = e by lia. done.
            }
-           rewrite !insert_Permutation ?drop_length; [|lia..].
+           rewrite !insert_Permutation ?length_drop; [|lia..].
            apply: perm_swap.
       * move => /(elem_of_list_lookup_1 _ _)[nx ].
         rewrite lookup_drop => ? /bool_decide_unpack ?.

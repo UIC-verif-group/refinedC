@@ -12,5 +12,7 @@ Goal ∀ Σ (P : nat → iProp Σ),
   (* Reset Ltac Profile. *)
   time "liWand" repeat (liEnsureInvariant; liWand).
   (* Show Ltac Profile. *)
+  li_unfold_lets_in_context.
+  time "liWand" repeat (liEnsureInvariant; liSep).
   destruct falso.
 Time Qed.

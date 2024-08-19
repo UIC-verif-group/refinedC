@@ -1057,7 +1057,7 @@ Lemma wp_call vf vl f fn Φ:
    ) -∗
    WP (Call (Val vf) (Val <$> vl)) {{ Φ }}.
 Proof.
-  move => Hf Hly. move: (Hly) => /Forall2_length. rewrite fmap_length => Hlen_vs.
+  move => Hf Hly. move: (Hly) => /Forall2_length. rewrite length_fmap => Hlen_vs.
   iIntros "Hf HWP". iApply wp_lift_expr_step; first done.
   iIntros (σ1) "((%&Hhctx&Hbctx)&Hfctx)".
   iDestruct (fntbl_entry_lookup with "Hfctx Hf") as %[a [? Hfn]]; subst. iModIntro.
@@ -1075,7 +1075,7 @@ Proof.
 
   iDestruct ("HWP" $! lsa lsv with "[//] Hla [Hlv]") as (Ψ') "(HQinit & HΨ')". {
     rewrite big_sepL2_fmap_r. iApply (big_sepL2_mono with "Hlv") => ??? ?? /=.
-    iIntros "?". iExists _. iFrame. iPureIntro. split; first by apply replicate_length.
+    iIntros "?". iExists _. iFrame. iPureIntro. split; first by apply length_replicate.
     apply: Forall2_lookup_lr. 2: done. 1: done.
     rewrite list_lookup_fmap. apply fmap_Some. naive_solver.
   }
@@ -1090,9 +1090,9 @@ Proof.
     iDestruct "Ha" as "[% Ha]". iDestruct "Hv" as "[% Hv]".
     iDestruct "Hfree_a" as "[% Hfree_a]". iDestruct "Hfree_v" as "[% Hfree_v]".
     rewrite !zip_fmap_r !big_sepL_fmap/=. iFrame.
-    setoid_rewrite replicate_length. iFrame.
+    setoid_rewrite length_replicate. iFrame.
     iApply (big_sepL_impl' with "Hfree_a").
-    { rewrite !zip_with_length !min_l ?fmap_length //; lia. }
+    { rewrite !length_zip_with !min_l ?length_fmap //; lia. }
     iIntros (??? [?[v0[?[??]]]]%lookup_zip_with_Some [?[ly0[?[??]]]]%lookup_zip_with_Some) "!> H2"; simplify_eq/=.
     have -> : v0 `has_layout_val` ly0.2; last done.
     eapply Forall2_lookup_lr; [done..|].

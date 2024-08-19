@@ -87,7 +87,7 @@ Section struct.
       try iPureIntro; simplify_eq/= => //.
     all: iDestruct "Hsz" as %Hsz; iDestruct "Hf" as %Hf.
     all: iExists (v' ++ vs').
-    all: rewrite heap_mapsto_app -Hsz take_app_length' // drop_app_length' // app_length; iFrame.
+    all: rewrite heap_mapsto_app -Hsz take_app_length' // drop_app_length' // length_app; iFrame.
     all: rewrite Hszv; iFrame "Hl'".
     all: iPureIntro; eauto with lia.
     Unshelve. all: apply: MCNone.
@@ -102,17 +102,17 @@ Section struct.
     iDestruct "Htys" as "[Hty Htys]".
     move: Hlys. intros [[?[?[??]]] ?]%Forall2_cons. move: Hly => [??].
     rewrite -(take_drop (ly_size ly) v).
-    rewrite shift_loc_0 heap_mapsto_app take_app_length' ?take_length_le // ?Hv; try by cbn; lia.
+    rewrite shift_loc_0 heap_mapsto_app take_app_length' ?length_take_le // ?Hv; try by cbn; lia.
     iDestruct "Hl" as "[Hl Hl']". cbn. simplify_eq/=.
     setoid_rewrite <-shift_loc_assoc_nat.
     iSplitR "Htys Hl'".
     - iClear "IH".
       destruct n; [destruct tys => //|] => /=; iDestruct (ty_ref with "[] Hl Hty") as "$" => //.
     - destruct n => /=; rewrite -?fmap_tail; iApply ("IH" with "[] [] [] [] Hl' [Htys]") => //;
-        iClear "IH"; try iPureIntro; rewrite ?drop_length; try lia.
+        iClear "IH"; try iPureIntro; rewrite ?length_drop; try lia.
       all: try by rewrite Hv /struct_size/offset_of_idx; csimpl; lia.
       1: destruct tys; naive_solver.
-      all: rewrite drop_app_length' ?take_length// Hv; cbn; lia.
+      all: rewrite drop_app_length' ?length_take// Hv; cbn; lia.
   Qed.
   Next Obligation.
     iIntros (sl tys v ot mt st Hot). apply: mem_cast_compat_Untyped => ?.
@@ -135,13 +135,13 @@ Section struct.
         apply/lookup_zip_with_Some. eexists _, _. split_and!; [done..|]. by apply: field_members_idx_lookup. }
       by iApply (ty_size_eq with "Hv").
     }
-    iApply (big_sepL2_impl' with "Htys"); [by rewrite !reshape_length |done|].
+    iApply (big_sepL2_impl' with "Htys"); [by rewrite !length_reshape |done|].
     iIntros "!>" (k v1 ty1 v2 ty2 Hv1 Hty1 Hv2 Hty2) "Hv"; simplify_eq.
     rewrite mem_cast_struct_reshape // in Hv2; [|congruence].
     move: Hv2 => /lookup_zip_with_Some [?[?[?[Hpad Hv']]]]. simplify_eq.
     rewrite Hv1 in Hv'. simplify_eq.
     move: Hty1 => /pad_struct_lookup_Some[|n[?[? Hor1]]]. { done. }
-    move: Hpad => /pad_struct_lookup_Some[|?[?[? Hor2]]]. { rewrite fmap_length. congruence. } simplify_eq.
+    move: Hpad => /pad_struct_lookup_Some[|?[?[? Hor2]]]. { rewrite length_fmap. congruence. } simplify_eq.
     destruct Hor1 as [[??] |[??]], Hor2 as [[? Hl] |[??]]; simplify_eq.
     - rewrite list_lookup_fmap in Hl. move: Hl => /fmap_Some[ot [??]]. simplify_eq.
       iApply ty_memcast_compat_copy; [|done]. destruct n as [n|] => //.
@@ -151,7 +151,7 @@ Section struct.
       apply/lookup_zip_with_Some. eexists (_, _), _. split_and!; [done| |done].
       apply/lookup_zip_with_Some. eexists _, _. naive_solver.
     - unfold bytewise; simpl_type. iPureIntro.
-      rewrite /has_layout_val replicate_length. split; [done|]. by apply: Forall_true.
+      rewrite /has_layout_val length_replicate. split; [done|]. by apply: Forall_true.
   Qed.
 
   Global Instance struct_le : Proper ((=) ==> Forall2 (⊑) ==> (⊑)) struct.
@@ -293,7 +293,7 @@ Section struct.
       iIntros "Hinv [? $]". erewrite take_S_r; [|done]. erewrite take_S_r; [|done].
       rewrite big_sepL2_snoc. iFrame.
     }
-    rewrite !zip_with_length !take_ge; [|lia..]. iExists _. iFrame.
+    rewrite !length_zip_with !take_ge; [|lia..]. iExists _. iFrame.
     by iApply "Hc".
   Qed.
   Definition struct_mono_inst := [instance struct_mono].
@@ -328,7 +328,7 @@ Section struct.
       erewrite take_S_r; [|done]. erewrite take_S_r; [|done].
       rewrite big_sepL2_snoc. iFrame.
     }
-    rewrite !zip_with_length !take_ge; [|lia..]. iExists _. iFrame.
+    rewrite !length_zip_with !take_ge; [|lia..]. iExists _. iFrame.
     by iApply "Hc".
   Qed.
   Definition struct_mono_val_inst := [instance struct_mono_val].
@@ -351,7 +351,7 @@ Section struct.
     iApply ("HP" with "Hl"). iIntros (l' ty2 β2 typ R) "Hl' Hc HT".
     iApply ("HΦ" with "Hl' [-HT] HT").
     iIntros (ty') "Hty". iMod ("Hc" with "Hty") as "[Hty $]". iModIntro.
-    iDestruct ("Hs" with "Hty") as "Hs". iSplitR => //. iSplitR; first by rewrite insert_length.
+    iDestruct ("Hs" with "Hty") as "Hs". iSplitR => //. iSplitR; first by rewrite length_insert.
     iFrame "Hb". erewrite pad_struct_insert_field => //. have := field_index_of_leq _ _ _ Hi. lia.
   Qed.
   Definition type_place_struct_inst := [instance type_place_struct].
@@ -383,24 +383,24 @@ Section struct.
     iInduction (slm) as [|[n ?] ms] "IH" forall (vs tys v s Hs Hvs Hv Hf); csimpl.
     - iDestruct ("He" $! (mjoin vs)) as "HT". iApply ("HΦ" with "[-HT] HT"). simplify_list_eq.
       rewrite {2}/ty_own_val/=/layout_of{3}/ly_size.
-      rewrite join_reshape // ?fmap_length//. by iFrame.
+      rewrite join_reshape // ?length_fmap//. by iFrame.
     - rewrite cons_middle assoc in Hs. destruct n => /=.
       + iDestruct "He" as (e ->) "He". iApply "He". iIntros (v1 ty) "Hv [% Hf]".
         iDestruct (ty_size_eq with "Hv") as %Hsz; [done|].
         iApply ("IH" $! _ _ (v ++ v1) with "[//] [] [] [] Hf HΦ");
-          try iPureIntro; rewrite ?fmap_app ?pad_struct_snoc_Some ?fmap_length //.
+          try iPureIntro; rewrite ?fmap_app ?pad_struct_snoc_Some ?length_fmap //.
         * by rewrite /= reshape_app take_app_length' ?drop_app_length' /= ?take_ge ?Hsz; subst.
-        * rewrite app_length sum_list_with_app /= Hsz -Hv/=; lia.
-        * by rewrite /field_names omap_app !app_length Hf.
+        * rewrite length_app sum_list_with_app /= Hsz -Hv/=; lia.
+        * by rewrite /field_names omap_app !length_app Hf.
         * iApply (big_sepL2_app with "Hvs"). by iFrame.
       + iApply wp_value.
         iApply ("IH" $! _ _ (v ++ replicate (ly_size l) ☠%V) with "[//] [] [] [] He HΦ");
           try iPureIntro; rewrite ?fmap_app ?pad_struct_snoc_None.
-        * by rewrite reshape_app take_app_length' ?drop_app_length' /= ?take_ge ?Hsz ?replicate_length; subst.
-        * rewrite app_length sum_list_with_app Hv replicate_length /=. lia.
-        * by rewrite /field_names omap_app !app_length Hf.
+        * by rewrite reshape_app take_app_length' ?drop_app_length' /= ?take_ge ?Hsz ?length_replicate; subst.
+        * rewrite length_app sum_list_with_app Hv length_replicate /=. lia.
+        * by rewrite /field_names omap_app !length_app Hf.
         * iApply (big_sepL2_app with "Hvs"). simpl. iSplit => //. unfold bytewise at 2; simpl_type. iPureIntro.
-          split; first by rewrite /has_layout_val replicate_length.
+          split; first by rewrite /has_layout_val length_replicate.
           by apply Forall_forall.
   Qed.
   Lemma type_struct_init : [type_from_syntax type_struct_init_syn].
@@ -413,17 +413,17 @@ Section struct.
     rewrite /layout_of/struct{1 2}/ty_own/offset_of_idx/=.
     iSplit.
     - iDestruct 1 as (v Hv Hl _) "Hl". iSplit => //. iSplit.
-      { iPureIntro. rewrite fmap_length. by apply omap_length_eq => i [[?|]?]. }
+      { iPureIntro. rewrite length_fmap. by apply omap_length_eq => i [[?|]?]. }
       have {}Hl := check_fields_aligned_alt_correct _ _ Hl.
       rewrite /has_layout_val{1}/ly_size in Hv.
       iSplit. { iApply loc_in_bounds_shorten; last by iApply heap_mapsto_own_state_loc_in_bounds. lia. }
       iInduction (sl_members s) as [|[n ly] ms] "IH" forall (v l Hl Hv) => //; csimpl in *.
       rewrite shift_loc_0. setoid_rewrite <-shift_loc_assoc_nat. move: Hl => [??].
-      have Hlen: (length (take (ly_size ly) v) = ly_size ly) by rewrite take_length_le ?Hv//; cbn; lia.
+      have Hlen: (length (take (ly_size ly) v) = ly_size ly) by rewrite length_take_le ?Hv//; cbn; lia.
       rewrite -(take_drop ly.(ly_size) v).
       iDestruct (heap_mapsto_own_state_app with "Hl") as "[Hl Hr]". rewrite Hlen.
       iSplitL "Hl"; destruct n; try by [iExists _; iFrame; rewrite Forall_forall]; iApply "IH" => //;
-      try rewrite drop_length; try iPureIntro; lia.
+      try rewrite length_drop; try iPureIntro; lia.
     - iIntros "[$ Hl]". iDestruct "Hl" as (_) "[#Hb Hl]".
       rewrite /has_layout_val{2}/ly_size.
       iInduction (sl_members s) as [|[n ly] ms] "IH" forall (l) => //; csimpl in *.
@@ -435,7 +435,7 @@ Section struct.
       all: rewrite /ty_own/=; iDestruct "Hl" as (v1 Hv1 Hl _) "Hl".
       all: iDestruct ("IH" with "Hb2 Hs") as (v2 Hv2 _) "Hv".
       all: iExists (v1 ++ v2).
-      all: rewrite heap_mapsto_own_state_app app_length Hv1 Hv2.
+      all: rewrite heap_mapsto_own_state_app length_app Hv1 Hv2.
       all: rewrite Forall_app !Forall_forall.
       all: by iFrame.
   Qed.

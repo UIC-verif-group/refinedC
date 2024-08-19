@@ -278,9 +278,9 @@ Proof.
   split_eq i j; first by intros; simpl_insert.
   move => Hlt Hj /Permutation_inj [Hlen [f [Hinj Heq]]].
   (* i ≠ j *)
-  rewrite insert_length in Hlen.
+  rewrite length_insert in Hlen.
   apply Permutation_inj. split.
-  - by rewrite -Hlen insert_length insert_length.
+  - by rewrite -Hlen length_insert length_insert.
   - exists (λ k, if bool_decide (k = i) then f j
       else if bool_decide (k = j) then f i else f k).
     split.
@@ -288,7 +288,7 @@ Proof.
       repeat case_bool_decide; apply Hinj in Hab; congruence.
     + move => k.
       have ? : (j < length (<[i:=y]> l1))%nat.
-      { rewrite insert_length. apply lookup_lt_is_Some. by exists y. }
+      { rewrite length_insert. apply lookup_lt_is_Some. by exists y. }
       repeat case_bool_decide; simplify_eq; rewrite -Heq.
       all: by do!
         [ rewrite list_lookup_insert_ne; last solve_goal

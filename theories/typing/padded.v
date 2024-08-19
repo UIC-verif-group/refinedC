@@ -23,7 +23,7 @@ Section padded.
     iIntros (ty lyty ly ot mt v [-> ?]). iDestruct 1 as (v1 v2 [??] ->) "[Hv1 Hv2]".
     iDestruct (ty_size_eq with "Hv1") as %Heq1; [done|].
     iDestruct (ty_size_eq _ (UntypedOp _) MCNone with "Hv2") as %Heq2; [done|].
-    iPureIntro. rewrite /has_layout_val app_length Heq1 Heq2 {2}/ly_size/=. lia.
+    iPureIntro. rewrite /has_layout_val length_app Heq1 Heq2 {2}/ly_size/=. lia.
   Qed.
   Next Obligation.
     iIntros (ty lyty ly ot mt l [-> ?]). iDestruct 1 as ([??] ?) "[_ [Hl Hpad]]".
@@ -42,7 +42,7 @@ Section padded.
     iDestruct (ty_ref with "[%] Hmt1 Hv1") as "$"; [done| by apply: has_layout_loc_trans|].
     iDestruct (ty_ref _ (UntypedOp _) MCNone with "[%] Hmt2 Hv2") as "$" => //. { by apply: has_layout_ly_offset. }
     iSplit => //. iSplit => //. iApply loc_in_bounds_shorten; last done.
-    rewrite app_length Heq1 Heq2 /ly_size /= -!/(ly_size _). lia.
+    rewrite length_app Heq1 Heq2 /ly_size /= -!/(ly_size _). lia.
   Qed.
   Next Obligation. iIntros (ty lyty ly v ot mt st ?). apply mem_cast_compat_Untyped. destruct ot; naive_solver. Qed.
 
@@ -112,7 +112,7 @@ Section padded.
     iDestruct (ty_deref _ (UntypedOp _) MCNone with "Hr") as (v2) "[Hr Hv2]"; [done|].
     iDestruct (ty_size_eq _ (UntypedOp _) MCNone with "Hv2") as %Hlen2; [done|].
     iApply ("HT" with "Hv1"). iExists (v1 ++ v2).
-    rewrite /= heap_mapsto_own_state_app /has_layout_val app_length Forall_forall Hlen1 Hlen2.
+    rewrite /= heap_mapsto_own_state_app /has_layout_val length_app Forall_forall Hlen1 Hlen2.
     iFrame. iPureIntro; split_and! => //.
     rewrite /= /ly_offset {2}/ly_size. lia.
   Qed.
@@ -179,12 +179,12 @@ Section padded.
     - iSplit => //. iSplit; first by iPureIntro; apply: has_layout_loc_trans.
       iSplit. { iApply loc_in_bounds_shorten; last done. rewrite /ly_size /= -/(ly_size _). lia. }
       iExists _. iFrame. iPureIntro. rewrite Forall_forall. split_and! => //.
-      rewrite /has_layout_val take_length_le // Hv. rewrite {2}/ly_size/=. lia.
-    - rewrite shift_loc_assoc take_length_le. 2: rewrite Hv {2}/ly_size/=; lia.
+      rewrite /has_layout_val length_take_le // Hv. rewrite {2}/ly_size/=. lia.
+    - rewrite shift_loc_assoc length_take_le. 2: rewrite Hv {2}/ly_size/=; lia.
       have ->: (ly_size lyty + (n - ly_size lyty)%nat) = n by lia.
       iExists _. iFrame. iPureIntro. rewrite Forall_forall.
       split_and! => //; last by apply has_layout_ly_offset.
-      rewrite /has_layout_val drop_length Hv {1 4}/ly_size/=. lia.
+      rewrite /has_layout_val length_drop Hv {1 4}/ly_size/=. lia.
   Qed.
 
 

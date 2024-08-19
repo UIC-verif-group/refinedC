@@ -56,7 +56,7 @@ Proof.
       assert (i = j) as Hij.
       { assert (j < i + 1); last by lia.
         assert (is_Some ((take (i + 1) l) !! j)) as P by by exists y.
-        apply lookup_lt_is_Some_1 in P. rewrite take_length in P. lia. }
+        apply lookup_lt_is_Some_1 in P. rewrite length_take in P. lia. }
       subst j.
       rewrite lookup_take in H; last by lia.
       rewrite Hi in H. by inversion H.
@@ -84,7 +84,7 @@ Proof.
       assert (i = j) as Hij.
       { assert (j < i + 1); last by lia.
         assert (is_Some ((take (i + 1) l) !! j)) as P by by exists y.
-        apply lookup_lt_is_Some_1 in P. rewrite take_length in P. lia. }
+        apply lookup_lt_is_Some_1 in P. rewrite length_take in P. lia. }
       subst j.
       rewrite lookup_take in H; last by lia.
       rewrite Hi in H. by inversion H.

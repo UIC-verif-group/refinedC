@@ -67,7 +67,7 @@ Global Typeclasses Opaque NULL.
 Lemma val_of_loc_n_length n l:
   length (val_of_loc_n n l) = n.
 Proof.
-  by rewrite /val_of_loc_n fmap_length rev_length seq_length.
+  by rewrite /val_of_loc_n length_fmap rev_length length_seq.
 Qed.
 
 Lemma val_to_of_loc_n n l:
@@ -198,7 +198,7 @@ Lemma i2v_length n it: length (i2v n it) = bytes_per_int it.
 Proof.
   rewrite /i2v. destruct (val_of_Z n it None) eqn:Heq.
   - by apply val_of_Z_length in Heq.
-  - by rewrite replicate_length.
+  - by rewrite length_replicate.
 Qed.
 
 Lemma val_to_Z_length v it z:

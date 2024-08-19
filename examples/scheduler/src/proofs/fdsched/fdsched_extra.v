@@ -67,7 +67,7 @@ Program Definition fds_set_callback_func (fds : fd_sched)  (type prio : nat) :=
   |}.
 Next Obligation.
   move => [? [? ? ? ?]] type prio.
-  by rewrite insert_length.
+  by rewrite length_insert.
 Qed.
 Next Obligation.
   by move => [? [? ? ? ?]] _ _ .
@@ -115,7 +115,7 @@ Section RecieveOneMessageProof.
   Lemma packet_data_len pckt:
     length (get_packet_data pckt) ≤ max_int i32.
   Proof.
-    rewrite /get_packet_data take_length.
+    rewrite /get_packet_data length_take.
     unfold_opaque max_msg_len; solve_goal.
   Qed.
 
@@ -241,7 +241,7 @@ Section CheckChannelsProofs.
       (ns' = ns ++ [n]).
   Proof.
     move => ->. rewrite /num_reads_for_ns => //=.
-    rewrite sum_list_with_app app_length => /=. lia.
+    rewrite sum_list_with_app length_app => /=. lia.
   Qed.
 
 
@@ -454,9 +454,9 @@ Section CheckUntilEmptyProofs.
     fds_have_ns_list_msgs_done (input_channels fd_state) (ns_list ++ [ns]) init.
   Proof.
     intros ???. split => //.
-    { rewrite take_app_length' => //. rewrite app_length => /=; lia. }
+    { rewrite take_app_length' => //. rewrite length_app => /=; lia. }
     rewrite last_snoc. split.
-    - rewrite take_app_length' => //. rewrite app_length => /=; lia.
+    - rewrite take_app_length' => //. rewrite length_app => /=; lia.
     - apply not_Exists_Forall in H0; last solve_decision.
       eapply Forall_impl => // x /=; lia.
   Qed.

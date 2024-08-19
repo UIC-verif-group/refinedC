@@ -194,7 +194,7 @@ Section defs.
       1: { rewrite list_lookup_insert_Some. naive_solver. }
       2: { revert select ( <[ _ := _ ]> _ !! _ = Some _). rewrite list_lookup_insert_Some. naive_solver. }
       2: revert select ( <[ _ := _ ]> _ !! _ = Some _); rewrite list_lookup_insert_Some => -[?|[??]]; [ naive_solver |].
-      all: revert select (_ ∈ _); revert select (∀ y, y ∈ _ → _); rewrite rotate_take_insert ?insert_length; [|lia];
+      all: revert select (_ ∈ _); revert select (∀ y, y ∈ _ → _); rewrite rotate_take_insert ?length_insert; [|lia];
         case_decide;[|naive_solver lia].
       + move => ? /(list_elem_of_insert1 _ _ _ _)[?|?]; subst; destruct ir'; naive_solver.
       + move => Hx Hin' Hx'. apply: (Hx _ _ Hx'). apply: list_elem_of_insert2' => //.

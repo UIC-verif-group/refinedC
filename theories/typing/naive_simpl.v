@@ -164,7 +164,7 @@ Ltac normalize_goal4 :=
 (*   let Hr := eval unfold H in H in idtac Hr. *)
 (*   notypeclasses refine ( (λ x : Z, λ H : Normalize 0 x, _ ) _ _). *)
 
-#[export] Hint Rewrite @insert_length @app_length : test_db.
+#[export] Hint Rewrite @length_insert @length_app : test_db.
 Goal ∀ l i (x : Z),
     0%nat = length (<[i:=x]> l).
   intros.
@@ -214,7 +214,7 @@ Goal ∀ l i (x : Z),
   (* Show Proof. *)
   (* Time normalize_goal4. *)
   (* Show Proof. *)
-  (* Time rewrite_strat (topdown (choice insert_length app_length)). *)
+  (* Time rewrite_strat (topdown (choice length_insert length_app)). *)
   (* nmo *)
 
   (* normalize_goal3. *)

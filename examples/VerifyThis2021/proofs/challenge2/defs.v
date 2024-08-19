@@ -173,7 +173,7 @@ Proof.
   move => n0 l_l v l_r rest tr_l tr_r Hnz.
   assert (n0 `div` 2 < n0)%nat as Hdiv. { apply Nat.div_lt; lia. }
   revert Hdiv. generalize (n0 `div` 2)%nat => n0div2.
-  rewrite !app_length /=. lia.
+  rewrite !length_app /=. lia.
 Qed.
 
 Lemma tree_list_eq_full_length {A : Type} (l l_rest : list A) (t : tree A):

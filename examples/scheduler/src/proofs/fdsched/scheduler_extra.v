@@ -29,7 +29,7 @@ Qed.
 
 Lemma create_bitmap_length sched_state :
   length (create_bitmap (msg_qs sched_state)) = Z.to_nat num_priorities.
-Proof. by rewrite -(msg_qs_bounded sched_state) /create_bitmap; apply fmap_length. Qed.
+Proof. by rewrite -(msg_qs_bounded sched_state) /create_bitmap; apply length_fmap. Qed.
 
 #[export] Hint Rewrite msg_qs_bounded : lithium_rewrite.
 #[export] Hint Rewrite callbacks_bounded : lithium_rewrite.
@@ -49,7 +49,7 @@ Program Definition add_msg_to_scheduler (sched_state : npfp_sched) (msg : messag
   callbacks_bounded := callbacks_bounded sched_state;
 |}.
 Next Obligation.
-  move => sched_state ??. rewrite -(msg_qs_bounded sched_state). apply insert_length.
+  move => sched_state ??. rewrite -(msg_qs_bounded sched_state). apply length_insert.
 Qed.
 
 (** Function to look up the priority for a given message type *)

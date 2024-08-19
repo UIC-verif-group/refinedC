@@ -170,7 +170,7 @@ Ltac enrich_context_base :=
          | |- context C [ length (filter ?P ?l) ] =>
            let G := context C[enrich_marker length (filter P l)] in
            change_no_check G;
-           pose proof (filter_length P l)
+           pose proof (length_filter P l)
            end.
 
 Ltac enrich_context :=

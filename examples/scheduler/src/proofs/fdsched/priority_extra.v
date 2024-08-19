@@ -86,7 +86,7 @@ Lemma testbit_spec_bitmap_out_of_range bm i :
 Proof.
   move => Hlen.
   have H: (0 ≤ little_endian_to_Z 1 (bool_to_Z <$> bm) < 2 ^ length bm); last bitblast.
-  rewrite -(Z.mul_1_r (length bm)) -(fmap_length bool_to_Z).
+  rewrite -(Z.mul_1_r (length bm)) -(length_fmap bool_to_Z).
   apply (little_endian_to_Z_bound _ _); first lia.
   by rewrite Forall_map Forall_forall => x; case x.
 Qed.
@@ -156,7 +156,7 @@ Proof.
   move => Hlen Hprio Hold_int Hnew_int Hneq Hlt.
   destruct (decide (i < 64)).
   + apply (encode_prio_bitmap_spec (<[Z.to_nat priority:=b]> bm) (priority `div` 64) _ _) => //; try lia.
-    * by rewrite insert_length.
+    * by rewrite length_insert.
     * rewrite list_lookup_insert_ne; last lia.
       by apply (encode_prio_bitmap_spec bm _ i old_int) => //; try lia.
   + apply encode_prio_bitmap_lookup_Some in Hold_int as [? ->], Hnew_int as [? ->].
@@ -189,7 +189,7 @@ Proof.
   move => Hlen Hrange Hold_int.
   symmetry. bitblast as i.
   - apply (encode_prio_bitmap_spec (<[Z.to_nat priority:=true]> bm) (priority `div` 64) _ _) => //; try lia.
-    + by rewrite insert_length.
+    + by rewrite length_insert.
     + apply list_lookup_lookup_total_lt => /=. lia.
     + replace i with (priority `mod` 64) by lia.
       rewrite Z.mul_comm -Z_div_mod_eq_full.

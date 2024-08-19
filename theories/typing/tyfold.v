@@ -81,7 +81,7 @@ Section tyfold.
     iIntros "HT". iDestruct 1 as (Hlen) "(Htys&Hb)".
     iDestruct ("HT" with "Hb") as (?? Heq) "[?[??]]". iExists _. iFrame.
     rewrite fmap_app. rewrite Heq. iSplit.
-    { iPureIntro. by rewrite !app_length Hlen fmap_length. }
+    { iPureIntro. by rewrite !length_app Hlen length_fmap. }
     rewrite last_snoc /=. iFrame. iSplitL "Htys" => /=.
     - iApply (big_sepL_mono with "Htys") => k y /(lookup_lt_Some _ _ _). rewrite -Hlen => Hl /=.
       rewrite ?app_comm_cons !lookup_app_l//=. lia.
