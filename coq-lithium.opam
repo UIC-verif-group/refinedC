@@ -16,7 +16,7 @@ dev-repo: "git+https://gitlab.mpi-sws.org/iris/refinedc.git"
 
 depends: [
   "coq" { (= "8.19.0" ) }
-  "coq-iris" { (= "dev.2024-08-17.0.8a98d00a") | (= "dev") }
+  "coq-iris" { (= "dev.2024-09-10.1.6f24ed4b") | (= "dev") }
   "coq-stdpp-unstable"
   "dune" {>= "3.9.1"}
   "coq-record-update" {= "0.3.3"}

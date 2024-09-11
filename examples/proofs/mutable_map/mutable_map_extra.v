@@ -113,7 +113,7 @@ Section defs.
   Lemma probe_ref_take_Some key n i items:
     probe_ref_go key (take n (rotate (slot_for_key_ref key (length items)) items)) = None →
     probe_ref_found key i →
-    items !! rotate_nat_add (slot_for_key_ref key (length items)) n (strings.length items) = Some i →
+    items !! rotate_nat_add (slot_for_key_ref key (length items)) n (length items) = Some i →
     probe_ref key items = Some (rotate_nat_add (slot_for_key_ref key (length items)) n (length items), i).
   Proof.
     naive_simpl. move => ?. revert select (_ ∈ rotate_take _ _ _).
