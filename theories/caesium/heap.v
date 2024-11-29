@@ -753,14 +753,14 @@ Lemma heap_update_heap_cell_in_range_alloc σ a v1 v2 Paid Plk faid flk:
   |}.
 Proof.
   elim: v2 v1 a => // b2 v2 IH [] // b1 v1 a1 Hσ Hcontains Hfaid [] Hlen.
-  move => a2 hc H /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
+  move => a2 hc Hh /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
   move: Hcontains => [[id[?[Heq [??]]]] Hcontains].
   destruct (decide (a1 = a2)) as [->|Hne].
-  - rewrite lookup_partial_alter -/heap_update in H. simplify_eq => /=.
+  - rewrite lookup_partial_alter -/heap_update in Hh. simplify_eq => /=.
     rewrite heap_update_lookup_not_in_range; last lia. rewrite Heq /= Hfaid.
     apply (Hσ a2 _ Heq).
-  - rewrite lookup_partial_alter_ne // -/heap_update in H.
-    by unshelve eapply (IH _ _ Hσ _ Hfaid Hlen a2 hc) => //.
+  - rewrite lookup_partial_alter_ne // -/heap_update in Hh.
+    by eapply IH.
 Qed.
 
 Lemma heap_update_heap_cell_alloc_alive σ a v1 v2 Paid Plk faid flk:
@@ -774,14 +774,14 @@ Lemma heap_update_heap_cell_alloc_alive σ a v1 v2 Paid Plk faid flk:
   |}.
 Proof.
   elim: v2 v1 a => // b2 v2 IH [] // b1 v1 a1 Hσ Hcontains Hfaid [] Hlen.
-  move => a2 hc H /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
+  move => a2 hc Hh /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
   move: Hcontains => [[id[?[Heq [??]]]] Hcontains].
   destruct (decide (a1 = a2)) as [->|Hne].
-  - rewrite lookup_partial_alter -/heap_update in H. simplify_eq => /=.
+  - rewrite lookup_partial_alter -/heap_update in Hh. simplify_eq => /=.
     rewrite heap_update_lookup_not_in_range; last lia. rewrite Heq /= Hfaid.
     apply (Hσ a2 _ Heq).
-  - rewrite lookup_partial_alter_ne // -/heap_update in H.
-    by unshelve eapply (IH _ _ Hσ _ Hfaid Hlen a2 hc) => //.
+  - rewrite lookup_partial_alter_ne // -/heap_update in Hh.
+    by eapply IH.
 Qed.
 
 Lemma heap_update_alloc_alive_in_heap σ a v1 v2 Paid Plk faid flk:

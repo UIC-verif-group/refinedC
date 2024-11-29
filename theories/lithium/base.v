@@ -16,10 +16,6 @@ Set Default Proof Using "Type".
 #[export] Unset Program Cases.
 #[export] Set Keyed Unification.
 
-(* We always annotate hints with locality ([Global] or [Local]). This enforces
-that at least global hints are annotated. *)
-#[export] Set Warnings "+deprecated-typeclasses-transparency-without-locality".
-
 #[export] Set Default Goal Selector "!".
 
 (* ensure that set from RecordUpdate simplifies when it is applied to a concrete value *)
@@ -51,6 +47,56 @@ Notation "'[@{' A '}' ]" := (@nil A) (only parsing) : list_scope.
 
 (** More automation for modular arithmetics. *)
 Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations.
+
+(* We remove a lot of cases from
+Z.euclidean_division_equations_cleanup since they cause significant
+slowdowns (e.g. around 200% slowdown in kvm_set_valid_leaf_pte) *)
+Ltac Z.euclidean_division_equations_cleanup ::=
+    repeat
+      (repeat match goal with
+         | [ H : 0 <= ?x < _ |- _ ] => destruct H
+         end;
+       repeat match goal with
+         | [ H : ?x <> ?x -> _ |- _ ] => clear H
+         | [ H : ?x < ?x -> _ |- _ ] => clear H
+         (* | [ H : ?T -> _, H' : ~?T |- _ ] => clear H *)
+         (* | [ H : ~?T -> _, H' : ?T |- _ ] => clear H *)
+         | [ H : ?A -> ?x <> ?x -> _ |- _ ] => clear H
+         | [ H : ?A -> ?x < ?x -> _ |- _ ] => clear H
+         (* | [ H : ?A -> ?B -> _, H' : ~?B |- _ ] => clear H *)
+         (* | [ H : ?A -> ~?B -> _, H' : ?B |- _ ] => clear H *)
+         (* | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H *)
+         (* | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H *)
+         (* | [ H : ?A -> 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H *)
+         (* | [ H : 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H *)
+         (* | [ H : ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H *)
+         (* | [ H : ?A -> 0 <= ?x -> _, H' : ?x < 0 |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x <= 0 -> _, H' : 0 < ?x |- _ ] => clear H *)
+         (* | [ H : 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H *)
+         (* | [ H : ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H *)
+         (* | [ H : ?A -> 0 < ?x -> _, H' : ?x <= 0 |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x < 0 -> _, H' : 0 <= ?x |- _ ] => clear H *)
+         (* | [ H : ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H *)
+         (* | [ H : ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x < ?y -> _, H' : ?x = ?y |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x < ?y -> _, H' : ?y = ?x |- _ ] => clear H *)
+         (* | [ H : ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H *)
+         (* | [ H : ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x = ?y -> _, H' : ?x < ?y |- _ ] => clear H *)
+         (* | [ H : ?A -> ?x = ?y -> _, H' : ?y < ?x |- _ ] => clear H *)
+         end;
+       repeat match goal with
+         | [ H : ?x = ?x -> ?Q |- _ ] => specialize (H eq_refl)
+         (* | [ H : ?T -> ?Q, H' : ?T |- _ ] => specialize (H H') *)
+         | [ H : ?A -> ?x = ?x -> ?Q |- _ ] => specialize (fun a => H a eq_refl)
+         (* | [ H : ?A -> ?B -> ?Q, H' : ?B |- _ ] => specialize (fun a => H a H') *)
+         (* | [ H : 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x (eq_sym pf))) *)
+         (* | [ H : ?A -> 0 <= ?x -> ?Q, H' : ?x <= 0 |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl 0 x (eq_sym pf))) *)
+         (* | [ H : ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun pf => H (@Z.eq_le_incl 0 x pf)) *)
+         (* | [ H : ?A -> ?x <= 0 -> ?Q, H' : 0 <= ?x |- _ ] => specialize (fun a pf => H a (@Z.eq_le_incl x 0 pf)) *)
+         end).
+
 
 (** * tactics *)
 Lemma rel_to_eq {A} (R : A → A → Prop) `{!Reflexive R} x y:
@@ -148,7 +194,7 @@ Ltac evalZ :=
 
 
 Create HintDb simplify_length discriminated.
-Global Hint Rewrite rev_length @length_app @length_take @length_drop @length_cons @length_nil : simplify_length.
+Global Hint Rewrite @length_rev @length_app @length_take @length_drop @length_cons @length_nil : simplify_length.
 Global Hint Rewrite @length_insert : simplify_length.
 Ltac simplify_length :=
   autorewrite with simplify_length.

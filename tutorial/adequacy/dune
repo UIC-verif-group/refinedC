@@ -1,5 +1,5 @@
 (coq.theory
- (flags :standard -w -notation-overridden -w -redundant-canonical-projection)
+ (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (name refinedc.tutorial.adequacy)
  (theories caesium refinedc.typing refinedc.typing.automation lithium
   refinedc.examples.spinlock refinedc.examples.latch

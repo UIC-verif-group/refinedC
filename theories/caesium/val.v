@@ -67,7 +67,7 @@ Global Typeclasses Opaque NULL.
 Lemma val_of_loc_n_length n l:
   length (val_of_loc_n n l) = n.
 Proof.
-  by rewrite /val_of_loc_n length_fmap rev_length length_seq.
+  by rewrite /val_of_loc_n length_fmap length_rev length_seq.
 Qed.
 
 Lemma val_to_of_loc_n n l:

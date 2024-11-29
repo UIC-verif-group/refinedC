@@ -33,7 +33,7 @@ https://gitlab.mpi-sws.org/msammler/refinedc-tutorial
 
 ## Installing RefinedC
 
-RefinedC is known to compile with Coq 8.19.0, on 64-bits Linux machines. It
+RefinedC is known to compile with Coq 8.20.0, on 64-bits Linux machines. It
 also possibly works on MacOS. In any case, we strongly advise you to rely on
 [opam](https://opam.ocaml.org/doc/Install.html) to install dependencies.
 

@@ -1,27 +1,27 @@
 From refinedc.typing Require Import base.
 
-Inductive to_uninit_annot : Type :=
+Inductive to_uninit_annot : Set :=
   ToUninit.
 
-Inductive stop_annot : Type :=
+Inductive stop_annot : Set :=
   StopAnnot.
 
-Inductive share_annot : Type :=
+Inductive share_annot : Set :=
   ShareAnnot.
 
-Inductive unfold_once_annot : Type :=
+Inductive unfold_once_annot : Set :=
   UnfoldOnceAnnot.
 
-Inductive learn_annot : Type :=
+Inductive learn_annot : Set :=
   LearnAnnot.
 
-Inductive learn_alignment_annot : Type :=
+Inductive learn_alignment_annot : Set :=
   LearnAlignmentAnnot.
 
-Inductive LockAnnot : Type := LockA | UnlockA.
+Inductive LockAnnot : Set := LockA | UnlockA.
 
-Inductive reduce_annot : Type :=
+Inductive reduce_annot : Set :=
   ReduceAnnot.
 
-Inductive assert_annot : Type :=
+Inductive assert_annot : Set :=
   AssertAnnot (s : string).

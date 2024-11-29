@@ -1,6 +1,6 @@
 (coq.theory
  (name caesium)
  (package refinedc)
- (flags :standard -w -notation-overridden -w -redundant-canonical-projection)
+ (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (synopsis "Caesium language")
  (theories caesium.config lithium stdpp iris RecordUpdate Ltac2))

@@ -448,9 +448,9 @@ Proof.
     have ->: ((S j - (s - 1) - 1) = j + 1 - s)%nat by lia.
     have -> : ((length A - 1 - S j) = length A - j - 2)%nat by lia.
     have ?: ((i - s - 1) ≤ (j + 1 - s))%nat by lia.
-    rewrite swap_app_r ?rev_length ?length_take ?length_drop ?length_insert//=.
+    rewrite swap_app_r ?length_rev ?length_take ?length_drop ?length_insert//=.
     2, 3: rewrite Nat.min_l; lia.
-    rewrite swap_app_l ?rev_length ?length_take ?length_drop ?length_insert//=.
+    rewrite swap_app_l ?length_rev ?length_take ?length_drop ?length_insert//=.
     2, 3: rewrite ?Nat.min_l; [|lia..]; lia.
     rewrite Nat.min_l; [|lia].
     have ->: (i - s - 1 - (length A - j - 2) = 0)%nat by lia.
