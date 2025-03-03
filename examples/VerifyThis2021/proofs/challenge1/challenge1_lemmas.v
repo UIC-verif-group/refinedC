@@ -195,12 +195,12 @@ Proof.
     rewrite rev_app_distr/=. destruct l2 => //=.
     { move => /Permutation_length. rewrite length_app /=. lia. }
     case_bool_decide; simplify_eq => Hcons.
-    + apply: IH; [by apply: StronglySorted_app_inv_l|].
+    + apply: IH; [by apply: StronglySorted_app_1_l|].
       rewrite <-Permutation_cons_append in Hcons.
         by apply: Permutation.Permutation_cons_inv.
     + rewrite <-Permutation_cons_append in Hcons.
       have /elem_of_cons[//|?]: z ∈ x1 :: l by rewrite Hcons; set_solver.
-      have := elem_of_StronglySorted_app _ _ _ _ x1 ltac:(done) ltac:(done) ltac:(set_solver).
+      have := StronglySorted_app_1_elem_of _ _ _ _ x1 ltac:(done) ltac:(done) ltac:(set_solver).
       case_bool_decide; naive_solver lia.
 Qed.
 

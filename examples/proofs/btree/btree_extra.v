@@ -48,14 +48,14 @@ Lemma StronglySorted_take {A} {R : A → A → Prop} (l : list A) (i : nat) :
   StronglySorted R l → StronglySorted R (take i l).
 Proof.
   move => H. rewrite -(take_drop i l) in H.
-  by apply StronglySorted_app_inv_l in H.
+  by apply StronglySorted_app_1_l in H.
 Qed.
 
 Lemma StronglySorted_drop {A} {R : A → A → Prop} (l : list A) (i : nat) :
   StronglySorted R l → StronglySorted R (drop i l).
 Proof.
   move => H. rewrite -(take_drop i l) in H.
-  by apply StronglySorted_app_inv_r in H.
+  by apply StronglySorted_app_1_r in H.
 Qed.
 
 Lemma StronglySorted_insert_drop_take {A} {R : A → A → Prop} `{!Transitive R} (l : list A) i x :
@@ -67,7 +67,7 @@ Proof.
   move => Hl Hr Hs. apply StronglySorted_insert_middle.
   - move => y /elem_of_take [iy [Hy1 Hy2]]. move: (Hl iy Hy2). by rewrite Hy1.
   - move => y Hy. destruct (l !! i) eqn:HEq.
-    * rewrite -(take_drop i l) in Hs. apply StronglySorted_app_inv_r in Hs.
+    * rewrite -(take_drop i l) in Hs. apply StronglySorted_app_1_r in Hs.
       erewrite drop_S in Hy, Hs; try done. apply StronglySorted_inv in Hs as [_ Hs].
       simpl in *. apply elem_of_cons in Hy as []; first by simplify_eq.
       transitivity a; first done. eapply Forall_forall in Hs; done.
@@ -101,7 +101,7 @@ Lemma StronglySorted_last_lt {A} {R : A → A → Prop} `{!StrictOrder R} (l : l
 Proof.
   move => Hs Hx Hne Hl. apply last_is_snoc in Hl as [prefix ->].
   apply elem_of_app in Hx as [Hx | Hx]; last by set_solver.
-  eapply elem_of_StronglySorted_app; [ done | done | by set_solver ].
+  eapply StronglySorted_app_1_elem_of; [ done | done | by set_solver ].
 Qed.
 
 Lemma StronglySorted_lookup_index_lt {A} {R : A → A → Prop} `{!StrictOrder R} l i1 i2 x1 x2 :
@@ -112,7 +112,7 @@ Proof.
   move => /Nat.lt_eq_cases [H|H]; last first.
   { assert (x1 = x2) as Heq by naive_solver. by apply (@irreflexive_eq _ R _ _ _ Heq). }
   apply (asymmetry HR). move: (take_drop (S i2) l) => Heq. rewrite -Heq in HSS.
-  apply (elem_of_StronglySorted_app _ _ _ _ _ HSS).
+  apply (StronglySorted_app_1_elem_of _ _ _ _ _ HSS).
   - apply elem_of_take. exists i2. split; [ done | lia ].
   - apply drop_elem_of. exists i1. split; [ lia | done ].
 Qed.
@@ -336,15 +336,15 @@ Section defs.
     destruct Hinv as (Hlen&->&_&Hcs&_&_&?&?&?&Hm0&Hm&HMlast&HM&_). split.
     - destruct (decide (i = 0%nat)) as [->|Hi_not_0]; first by move: (Hm0 d Hd) => ->.
       move: (Hm i d Hi_not_0 Hd) => P.
-      rewrite cons_middle app_assoc in HSS. apply StronglySorted_app_inv_l in HSS.
+      rewrite cons_middle app_assoc in HSS. apply StronglySorted_app_1_l in HSS.
       assert (br_min d - 1 < k); last by lia.
       assert (br_min d - 1 ∈ take i ks).
       { apply elem_of_list_lookup. exists (i - 1)%nat. rewrite lookup_take //. by lia. }
       apply (StronglySorted_last_lt _ _ _ HSS); [ apply elem_of_app; by left | .. | by rewrite last_snoc ].
-      eapply (elem_of_StronglySorted_app _ _ _ (br_min d - 1) k) in HSS; [ lia | done | by set_solver ].
+      eapply (StronglySorted_app_1_elem_of _ _ _ (br_min d - 1) k) in HSS; [ lia | done | by set_solver ].
     - destruct (decide (i = length vs)) as [->|Hi]; first by rewrite HMlast.
       move: (HM i d Hi Hd) => P.
-      apply StronglySorted_app_inv_r in HSS. apply StronglySorted_inv in HSS as [HSS Hlt].
+      apply StronglySorted_app_1_r in HSS. apply StronglySorted_inv in HSS as [HSS Hlt].
       assert (k < br_max d + 1); last by lia.
       assert (br_max d + 1 ∈ drop i ks).
       { apply elem_of_list_lookup. exists 0%nat. by rewrite lookup_drop // -plus_n_O. }
@@ -397,7 +397,7 @@ Section defs.
         assert (kj ∈ take (length ks) ks).
         { apply elem_of_take. eexists; split; first done. rewrite -Hlen1. apply lookup_lt_Some in Hdj. lia. }
         rewrite cons_middle app_assoc in HSS.
-        apply StronglySorted_app_inv_l in HSS.
+        apply StronglySorted_app_1_l in HSS.
         eapply (StronglySorted_last_lt _ kj k) in HSS;
           [ lia | set_solver | lia | by rewrite last_snoc ]. }
       by rewrite union_list_app lookup_union_r // /= right_id_L.
@@ -417,7 +417,7 @@ Section defs.
         assert (S i + j - 1 = i + j)%nat as -> by lia. move => HH.
         assert (kjmo < k). { rewrite Hkjmo in HH. simplify_eq. lia. }
         assert (kjmo ∈ drop i ks). { apply drop_elem_of. eexists; split; last done. lia. }
-        apply StronglySorted_app_inv_r in HSS. apply StronglySorted_inv in HSS as [_ XX].
+        apply StronglySorted_app_1_r in HSS. apply StronglySorted_inv in HSS as [_ XX].
         assert (k < kjmo); last by lia.
         move: XX => /Forall_forall => XX. apply XX. done. }
       assert (⋃ (br_map <$> take i     cs) !! k = None) as Hl.
@@ -441,7 +441,7 @@ Section defs.
         assert (k < kj). { simplify_eq. lia. }
         assert (kj ∈ take i ks). { apply elem_of_take. eexists; split; first done. lia. }
         rewrite cons_middle app_assoc in HSS.
-        apply StronglySorted_app_inv_l in HSS.
+        apply StronglySorted_app_1_l in HSS.
         eapply (StronglySorted_last_lt _ kj k) in HSS;
           [ lia | set_solver | lia | by rewrite last_snoc ]. }
       rewrite union_list_app lookup_union_r // /=.
