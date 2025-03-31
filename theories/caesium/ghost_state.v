@@ -779,7 +779,7 @@ Section heap.
     apply local_update_total_valid=> _ Hvalid _.
     have ? : (([^op list] k↦y ∈ bl, {[a + (1 + k) := (1%Qp, to_lock_stateR (RSt 0%nat), to_agree (aid, y))]} : heapUR) !! a = None). {
       move: (Hvalid a). rewrite lookup_op lookup_singleton.
-      by move=> /(cmra_discrete_valid_iff 0) /exclusiveN_Some_l.
+      by move=> /(cmra_discrete_valid_iff 0%nat) /exclusiveN_Some_l.
     }
     rewrite -insert_singleton_op //. etrans.
     { apply (delete_local_update _ _ a (1%Qp, to_lock_stateR (RSt 0%nat), to_agree (aid, b))).
