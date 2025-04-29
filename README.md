@@ -46,12 +46,10 @@ instructions in [DEVELOPERS.md](DEVELOPERS.md).
 Assuming an appropriate [opam](https://opam.ocaml.org/doc/Install.html) switch
 (OCaml version 4.14.0 at least), run the following commands.
 ```bash
-sudo apt-get install libmpfr-dev # Implicit Cerberus dependency.
 opam repo add coq-released "https://coq.inria.fr/opam/released"
 opam repo add iris-dev "https://gitlab.mpi-sws.org/iris/opam.git"
 opam update
-opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102"
-opam pin add -n -y cerberus "git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102"
+opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#6e3e8be7a3f75b1f1cb0704dca8ef3945be0e413"
 opam pin add refinedc "git+https://gitlab.mpi-sws.org/iris/refinedc.git"
 ```
 
@@ -60,11 +58,6 @@ If the `refinedc` command it not in the `PATH` and you installed
 where you created the switch.
 
 ### System dependencies
-
-In order to install RefinedC you will need to make sure that you have the GNU
-MPFR library on your system (`libmpfr-dev` package on Debian). It is required
-by [Cerberus](https://github.com/rems-project/cerberus), which we use or our
-frontend (but the dependency is implicit).
 
 The frontend also requires a C compiler (accessible through `cc`). A standard
 GCC or Clang installation should do the trick.
@@ -125,8 +118,7 @@ dependencies can be made available to opam by running the following commands.
 opam repo add coq-released "https://coq.inria.fr/opam/released"
 opam repo add iris-dev "https://gitlab.mpi-sws.org/iris/opam.git"
 opam update
-opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102"
-opam pin add -n -y cerberus "git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102"
+opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#d992a90affb95b4246df5f9cd7b720a4094d0f3d"
 ```
 You can then finally install RefinedC with the following command, or rather
 decide to install it from a local clone to have access to various examples.

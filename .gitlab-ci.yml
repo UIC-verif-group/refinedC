@@ -26,11 +26,10 @@ variables:
   - api
 
 ## Build jobs
-# z3 is pinned to not cause accidential breakage from z3 updates
 build-coq.8.20.0-timing:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.20.0   cerberus-lib git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   cerberus git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   z3 version 4.12.2"
+    OPAM_PINS: "coq version 8.20.0   cerberus-lib git git+https://github.com/rems-project/cerberus.git#6e3e8be7a3f75b1f1cb0704dca8ef3945be0e413   dune version 3.18.1"
     DENY_WARNINGS: "1"
     OPAM_PKG: "1"
   only:
@@ -43,7 +42,7 @@ build-coq.8.20.0-timing:
 build-coq.8.20.0:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.20.0   cerberus-lib git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   cerberus git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   z3 version 4.12.2"
+    OPAM_PINS: "coq version 8.20.0   cerberus-lib git git+https://github.com/rems-project/cerberus.git#6e3e8be7a3f75b1f1cb0704dca8ef3945be0e413   dune version 3.18.1"
     DENY_WARNINGS: "1"
   except:
   - master@iris/refinedc
@@ -58,7 +57,7 @@ trigger-iris.dev:
   variables:
     STDPP_REPO: "iris/stdpp"
     IRIS_REPO: "iris/iris"
-    OPAM_PINS: "coq version 8.20.0   git+https://gitlab.mpi-sws.org/$STDPP_REPO#$STDPP_REV   coq-iris.dev git git+https://gitlab.mpi-sws.org/$IRIS_REPO#$IRIS_REV  cerberus-lib git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   cerberus git git+https://github.com/rems-project/cerberus.git#57c0e80af140651aad72e3514133229425aeb102   z3 version 4.12.2"
+    OPAM_PINS: "coq version 8.20.0   git+https://gitlab.mpi-sws.org/$STDPP_REPO#$STDPP_REV   coq-iris.dev git git+https://gitlab.mpi-sws.org/$IRIS_REPO#$IRIS_REV  cerberus-lib git git+https://github.com/rems-project/cerberus.git#6e3e8be7a3f75b1f1cb0704dca8ef3945be0e413   dune version 3.18.1"
   except:
   only:
   - triggers

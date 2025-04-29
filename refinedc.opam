@@ -17,7 +17,7 @@ dev-repo: "git+https://gitlab.mpi-sws.org/iris/refinedc.git"
 
 depends: [
   "coq-lithium" {= version | = "~dev"}
-  "cerberus" {= "dev" | = "~dev"} # I do not understand the difference between dev and ~dev and when opam uses which
+  "cerberus-lib" {= "dev" | = "~dev"} # I do not understand the difference between dev and ~dev and when opam uses which
   "cmdliner" {>= "1.1.0"}
   "sexplib0" {>= "v0.14.0"}
   "earley" {= "3.0.0"}
