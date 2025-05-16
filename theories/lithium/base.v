@@ -7,7 +7,7 @@ From iris.program_logic Require Import weakestpre.
 From iris.bi Require Import bi.
 From iris.proofmode Require Import proofmode.
 From stdpp Require Import natmap.
-From stdpp.unstable Require Import bitblast.
+From lithium Require Import bitblast.
 From RecordUpdate Require Export RecordSet.
 Export RecordSetNotations.
 

@@ -1,4 +1,4 @@
-From stdpp.unstable Require Import bitblast.
+From lithium Require Import bitblast.
 From refinedc.typing Require Import typing.
 From caesium Require Import builtins_specs.
 

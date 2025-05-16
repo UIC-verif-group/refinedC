@@ -1,4 +1,4 @@
-From stdpp.unstable Require Import bitblast.
+From lithium Require Import bitblast.
 From caesium Require Import base int_type.
 
 (** * least significant 1-bit *)
