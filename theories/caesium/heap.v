@@ -122,7 +122,7 @@ Proof.
   elim: v a1 a2.
   - move => /= a1 a2 [??]. exfalso. lia.
   - move => ?? IH a1 a2 [H1 H2]. destruct (decide (a1 = a2)) as [->|Hne].
-    + rewrite lookup_partial_alter -/heap_update Z.sub_diag /=.
+    + rewrite lookup_partial_alter_eq -/heap_update Z.sub_diag /=.
       rewrite heap_update_lookup_not_in_range; [done | lia].
     + rewrite lookup_partial_alter_ne // -/heap_update /= IH; last first.
       { rewrite /= in H2. lia. } do 3 f_equal.
@@ -131,7 +131,7 @@ Qed.
 
 Lemma heap_free_delete h a1 a2 n :
   delete a1 (heap_free a2 n h) = heap_free a2 n (delete a1 h).
-Proof. elim: n a2 => //= ? IH ?. by rewrite delete_commute IH. Qed.
+Proof. elim: n a2 => //= ? IH ?. by rewrite delete_delete IH. Qed.
 
 Lemma heap_upd_ext h l v f1 f2:
   (∀ x, f1 x = f2 x) → heap_upd l v f1 h = heap_upd l v f2 h.
@@ -159,7 +159,7 @@ Proof.
   rewrite /heap_upd.
   elim: v l => // ?? IH ? [[?[?[H[H1 ?]]]]?] Hlookup /=.
   assert (∀ l, Z.succ l.2 = (l +ₗ 1).2) as -> by done.
-  rewrite IH => //. apply: partial_alter_self_alt'.
+  rewrite IH => //. apply: partial_alter_id'.
   by rewrite H Hlookup H1 /=.
 Qed.
 
@@ -622,7 +622,7 @@ Proof.
   move => σ1 l aid kind v alloc Haid Hfresh Halloc Hrange H.
   destruct H as (Hi1&Hi2&Hi3&Hi4&Hi5). split_and!.
   - move => a [id??] /= Ha. destruct (decide (aid = id)) as [->|Hne].
-    + exists alloc. split => /=; first by rewrite lookup_insert.
+    + exists alloc. split => /=; first by rewrite lookup_insert_eq.
       destruct (decide (l.2 ≤ a < l.2 + length v)) as [|Hne] => //=.
       exfalso. rewrite heap_update_lookup_not_in_range in Ha; last first.
       { destruct (decide (a < l.2)); [left | right] => //. lia. }
@@ -635,7 +635,7 @@ Proof.
       * exfalso. rewrite heap_update_lookup_in_range in Ha; last lia.
         by inversion Ha.
   - move => a [id??] /= Ha. destruct (decide (aid = id)) as [->|Hne].
-    + exists alloc. by rewrite lookup_insert.
+    + exists alloc. by rewrite lookup_insert_eq.
     + destruct (decide (a < l.2 ∨ l.2 + length v ≤ a)).
       * rewrite heap_update_lookup_not_in_range in Ha; last done.
         apply Hi2 in Ha. destruct Ha as [?[??]].
@@ -643,15 +643,15 @@ Proof.
       * exfalso. rewrite heap_update_lookup_in_range in Ha; last lia.
         by inversion Ha.
   - move => id a. destruct (decide (id = aid)) as [->|] => /=.
-    + rewrite lookup_insert => ?. by simplify_eq.
+    + rewrite lookup_insert_eq => ?. by simplify_eq.
     + rewrite lookup_insert_ne => //=. apply Hi3.
   - move => id1 id2 al1 al2 /= Hne Hal1 Hal2 Hid1 Hid2.
     destruct (decide (id1 = aid)) as [->|];
     last (destruct (decide (id2 = aid)) as [->|]).
-    + rewrite lookup_insert in Hal1. rewrite lookup_insert_ne // in Hal2.
+    + rewrite lookup_insert_eq in Hal1. rewrite lookup_insert_ne // in Hal2.
       simplify_eq => ???. eapply heap_state_alloc_alive_free_disjoint => //.
       move: Hid2 => /= [al []] /=. rewrite lookup_insert_ne //. by exists al.
-    + rewrite lookup_insert in Hal2. rewrite lookup_insert_ne // in Hal1.
+    + rewrite lookup_insert_eq in Hal2. rewrite lookup_insert_ne // in Hal1.
       simplify_eq => ???. eapply heap_state_alloc_alive_free_disjoint => //.
       move: Hid1 => /= [al []] /=. rewrite lookup_insert_ne //. by exists al.
     + rewrite !lookup_insert_ne // in Hal1, Hal2. move: Hid1 Hid2.
@@ -660,7 +660,7 @@ Proof.
       apply (Hi4 id1 id2 al1 al2) => //; by eexists.
   - move => id al /= Hal [? [/= ? Halive]] a Ha. simplify_eq.
     destruct (decide (id = aid)) as [->|].
-    + rewrite lookup_insert /= in Hal.
+    + rewrite lookup_insert_eq /= in Hal.
       rewrite heap_update_lookup_in_range; naive_solver.
     + rewrite lookup_insert_ne // in Hal.
       rewrite heap_update_lookup_not_in_range; last first.
@@ -705,18 +705,18 @@ Proof.
     move => Heq. destruct (Hi1 _ _ Hhc) as [?[?[??]]].
     subst al_a. simplify_eq. unfold al_end in *. simpl in *. lia.
   - move => id al /=. destruct (decide (id = aid)) as [->|].
-    + rewrite lookup_insert. move => [?]. subst al.
+    + rewrite lookup_insert_eq. move => [?]. subst al.
       assert (allocation_in_range al_a); last done.
       by eapply Hi3.
     + rewrite lookup_insert_ne; last done. naive_solver.
   - move => id1 id2 al1 al2 Hne /= Hid1 Hid2 Hal1 Hal2.
     destruct (decide (id1 = aid)) as [->|];
     last (destruct (decide (id2 = aid)) as [->|]).
-    + rewrite lookup_insert in Hid1. rewrite lookup_insert_ne // in Hid2.
+    + rewrite lookup_insert_eq in Hid1. rewrite lookup_insert_ne // in Hid2.
       simplify_eq. assert (al_a ## al2); last done.
       eapply (Hi4 _ _ _ _ Hne Hal_a Hid2); first by eexists.
       move: Hal2 => [?[/=]]. rewrite lookup_insert_ne //. by eexists.
-    + rewrite lookup_insert in Hid2. rewrite lookup_insert_ne // in Hid1.
+    + rewrite lookup_insert_eq in Hid2. rewrite lookup_insert_ne // in Hid1.
       simplify_eq. assert (al1 ## al_a); last done.
       eapply (Hi4 _ _ _ _ Hne Hid1 Hal_a); last by eexists.
       move: Hal1 => [?[/=]]. rewrite lookup_insert_ne //. by eexists.
@@ -724,7 +724,7 @@ Proof.
       rewrite !lookup_insert_ne // in Hid1, Hid2, Ha1, Ha2.
       apply (Hi4 id1 id2 al1 al2) => //; by eexists.
   - move => id al /= Hid [?[Hal1 Hal2]] a Ha. assert (id ≠ aid) as ?.
-    { move => ?; subst id. rewrite lookup_insert in Hal1. naive_solver. }
+    { move => ?; subst id. rewrite lookup_insert_eq in Hal1. naive_solver. }
     rewrite lookup_insert_ne // in Hid, Hal1. simplify_eq.
     rewrite heap_free_lookup_not_in_range;
     first (eapply Hi5 => //; by eexists). move => ?.
@@ -756,7 +756,7 @@ Proof.
   move => a2 hc Hh /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
   move: Hcontains => [[id[?[Heq [??]]]] Hcontains].
   destruct (decide (a1 = a2)) as [->|Hne].
-  - rewrite lookup_partial_alter -/heap_update in Hh. simplify_eq => /=.
+  - rewrite lookup_partial_alter_eq -/heap_update in Hh. simplify_eq => /=.
     rewrite heap_update_lookup_not_in_range; last lia. rewrite Heq /= Hfaid.
     apply (Hσ a2 _ Heq).
   - rewrite lookup_partial_alter_ne // -/heap_update in Hh.
@@ -777,7 +777,7 @@ Proof.
   move => a2 hc Hh /=. rewrite /heap_lookup -/heap_lookup in Hcontains.
   move: Hcontains => [[id[?[Heq [??]]]] Hcontains].
   destruct (decide (a1 = a2)) as [->|Hne].
-  - rewrite lookup_partial_alter -/heap_update in Hh. simplify_eq => /=.
+  - rewrite lookup_partial_alter_eq -/heap_update in Hh. simplify_eq => /=.
     rewrite heap_update_lookup_not_in_range; last lia. rewrite Heq /= Hfaid.
     apply (Hσ a2 _ Heq).
   - rewrite lookup_partial_alter_ne // -/heap_update in Hh.

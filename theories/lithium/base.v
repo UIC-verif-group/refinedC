@@ -1,7 +1,6 @@
-From Coq Require Export ssreflect.
-From stdpp Require Export sorting.
+From stdpp Require Export sorting ssreflect.
 From iris.algebra Require Export big_op.
-From Coq.ZArith Require Import Znumtheory.
+From Stdlib.ZArith Require Import Znumtheory.
 From stdpp Require Import gmap list.
 From iris.program_logic Require Import weakestpre.
 From iris.bi Require Import bi.
@@ -104,7 +103,7 @@ Lemma rel_to_eq {A} (R : A → A → Prop) `{!Reflexive R} x y:
 Proof. move => ->. reflexivity. Qed.
 
 Ltac fast_reflexivity :=
-  notypeclasses refine (rel_to_eq _ _ _ _); [solve [refine _] |];
+  notypeclasses refine (rel_to_eq _ _ _ _); [solve [typeclasses eauto] |];
   lazymatch goal with
   | |- ?x = ?y => lazymatch x with | y => exact: (eq_refl x) end
   end.
@@ -340,19 +339,19 @@ Lemma list_elem_of_insert1 {A} (l : list A) i (x1 x2 : A) :
   x1 ∈ <[i:=x2]> l → x1 = x2 ∨ x1 ∈ l.
 Proof.
   destruct (decide (i < length l)%nat). 2: rewrite list_insert_ge; naive_solver lia.
-  move => /(elem_of_list_lookup_1 _ _)[i' ].
+  move => /(list_elem_of_lookup_1 _ _)[i' ].
   destruct (decide (i = i')); subst.
-  - rewrite list_lookup_insert // => -[]. naive_solver.
-  - rewrite list_lookup_insert_ne // elem_of_list_lookup. naive_solver.
+  - rewrite list_lookup_insert_eq // => -[]. naive_solver.
+  - rewrite list_lookup_insert_ne // list_elem_of_lookup. naive_solver.
 Qed.
 
 Lemma list_elem_of_insert2 {A} (l : list A) i (x1 x2 x3 : A) :
   l !! i = Some x3 → x1 ∈ l → x1 ∈ <[i:=x2]> l ∨ x1 = x3.
 Proof.
   destruct (decide (i < length l)%nat). 2: rewrite list_insert_ge; naive_solver lia.
-  move => ? /(elem_of_list_lookup_1 _ _)[i' ?].
+  move => ? /(list_elem_of_lookup_1 _ _)[i' ?].
   destruct (decide (i = i')); simplify_eq; first naive_solver.
-  left. apply elem_of_list_lookup. exists i'. by rewrite list_lookup_insert_ne.
+  left. apply list_elem_of_lookup. exists i'. by rewrite list_lookup_insert_ne.
 Qed.
 Lemma list_elem_of_insert2' {A} (l : list A) i (x1 x2 x3 : A) :
   l !! i = Some x3 → x1 ∈ l → x1 ≠ x3 → x1 ∈ <[i:=x2]> l.
@@ -410,7 +409,7 @@ Proof.
   - move => [] //=??[->]. rewrite !filter_cons. by repeat (case_decide; case_bool_decide) => //=; lia.
   - move => i IH [|? l]//=?. rewrite !filter_cons. case_decide => //=; rewrite IH // Nat.sub_succ_l //.
     repeat case_bool_decide => //; try lia. opose proof* (length_filter_gt P l x') => //; try lia.
-    by apply: elem_of_list_lookup_2.
+    by apply: list_elem_of_lookup_2.
 Qed.
 
 Lemma length_filter_replicate_True {A} P `{!∀ x, Decision (P x)} (x : A) len:
@@ -475,7 +474,7 @@ Lemma StronglySorted_lookup_lt {A} R (l : list A) i j x y:
 Proof.
   move => Hs Hi Hj HR Hneq. elim: Hs j i Hj Hi => // z {}l _ IH /Forall_forall Hall.
   case => /=.
-  - case; first naive_solver. move => n [?]/= /(elem_of_list_lookup_2 _ _ _)?; subst. naive_solver.
+  - case; first naive_solver. move => n [?]/= /(list_elem_of_lookup_2 _ _ _)?; subst. naive_solver.
   - move => n. case; first lia. move => n2 /= ??. apply->Nat.succ_lt_mono. naive_solver.
 Qed.
 
@@ -510,11 +509,11 @@ Qed.
 Section theorems.
 Context `{FinMap K M}.
 
-Lemma partial_alter_self_alt' {A} (m : M A) i f:
+Lemma partial_alter_id' {A} (m : M A) i f:
   m !! i = f (m !! i) → partial_alter f i m = m.
 Proof using Type*.
   intros. apply map_eq. intros ii. by destruct (decide (i = ii)) as [->|];
-    rewrite ?lookup_partial_alter ?lookup_partial_alter_ne.
+    rewrite ?lookup_partial_alter_eq ?lookup_partial_alter_ne.
 Qed.
 
 Lemma partial_alter_to_insert {A} x (m : M A) f k:
@@ -577,12 +576,12 @@ Section list_subequiv.
     list_subequiv ig (<[j := x]>l1) l2 ↔ l2 !! j = Some x ∧ list_subequiv (j :: ig) l1 l2.
   Proof.
     move => ??. unfold list_subequiv. split.
-    - move => Hs. move: (Hs j) => [<- <-]//. rewrite list_lookup_insert //. split => // i.
+    - move => Hs. move: (Hs j) => [<- <-]//. rewrite list_lookup_insert_eq //. split => // i.
       rewrite length_insert. split => // Hi. move: (Hs i) => [? <-];[|set_solver].
       rewrite list_lookup_insert_ne //. set_solver.
     - rewrite length_insert. move => [? Hs] i. split; first by move: (Hs 0) => [? _]//.
       case: (decide (i = j)) => [->|?].
-      + by rewrite list_lookup_insert.
+      + by rewrite list_lookup_insert_eq.
       + rewrite list_lookup_insert_ne//. move: (Hs i) => [? H]// ?. apply H. set_solver.
   Qed.
 
@@ -610,9 +609,9 @@ Section list_subequiv.
     <[j:=x1]>l1 = l2 ↔ l2 !! j = Some x1 ∧ list_subequiv [j] l1 l2.
   Proof.
     move => ?. split.
-    - move => <-. rewrite list_lookup_insert // list_subequiv_insert_in_r //. set_solver.
+    - move => <-. rewrite list_lookup_insert_eq // list_subequiv_insert_in_r //. set_solver.
     - move => [? Hsub]. apply list_eq => i. case: (decide (i = j)) => [->|?].
-      + by rewrite list_lookup_insert.
+      + by rewrite list_lookup_insert_eq.
       + rewrite list_lookup_insert_ne//. apply Hsub. set_solver.
   Qed.
 
@@ -624,13 +623,13 @@ Section list_subequiv.
     move => Hlen. split.
     - move => Hsub. split; apply list_eq => n; move: (Hsub n) => Hn; set_unfold.
       + destruct (decide (n < i)%nat).
-        * rewrite !lookup_take; by naive_solver lia.
+        * rewrite !lookup_take_lt; by naive_solver lia.
         * rewrite !lookup_ge_None_2 // length_take; lia.
       + rewrite !lookup_drop. apply Hsub. set_unfold. lia.
     - move => [Ht Hd] n. split; first done.
       move => ?. have ? : (n ≠ i) by set_solver.
       destruct (decide (n < i)%nat).
-      + by rewrite -(lookup_take l1 i) // -(lookup_take l2 i) // Ht.
+      + by rewrite -(lookup_take_lt l1 i) // -(lookup_take_lt l2 i) // Ht.
       + have ->:(n = (S i) + (n - (S i)))%nat by lia.
         by rewrite -!lookup_drop Hd.
   Qed.
@@ -657,7 +656,7 @@ Section sep_list.
   Proof.
     intros Hl.
     destruct (lookup_lt_is_Some_2 l i Hl) as [y Hy].
-    rewrite big_sepL_delete; [| by apply list_lookup_insert].
+    rewrite big_sepL_delete; [| by apply list_lookup_insert_eq].
     rewrite insert_take_drop // -{3}(take_drop_middle l i y) // !big_sepL_app /=.
     do 3 f_equiv. rewrite length_take. case_decide => //. lia.
   Qed.
@@ -778,10 +777,10 @@ Proof.
   - f_equal. move: p H. induction n as [|n IH].
     + move => p /= Hp. destruct p => //.
     + move => p Hp. destruct p.
-      * exfalso. zify. rewrite Nat.pow_succ_r' in Hp. lia.
+      * exfalso. zify. rewrite Z.pow_add_r in Hp; lia.
       * rewrite /=. f_equal. apply IH.
-        zify. rewrite Nat.pow_succ_r' in Hp. lia.
-      * exfalso. zify. rewrite Nat.pow_succ_r' in Hp. lia.
+        zify. rewrite Z.pow_add_r in Hp; lia.
+      * exfalso. zify. rewrite Z.pow_add_r in Hp; lia.
 Qed.
 
 Lemma factor2_pow n x:

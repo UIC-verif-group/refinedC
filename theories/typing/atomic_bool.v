@@ -60,31 +60,29 @@ Notation "atomic_bool< it , PT , PF >" := (atomic_bool it PT PF)
 Section programs.
   Context `{!typeG Σ}.
 
-  Lemma subsume_atomic_bool_own_int A l n it PT PF T:
-    (l ◁ₗ n @ int it -∗ ∃ x b, l ◁ₗ b @ boolean it ∗ (if b then PT x else PF x) ∗ T x)
-    ⊢ subsume (l ◁ₗ n @ int it) (λ x : A, l ◁ₗ atomic_bool it (PT x) (PF x)) T.
+  Lemma subsume_atomic_bool_own_int A M l n it PT PF T:
+    (l ◁ₗ n @ int it -∗ ‖M‖ ∃ x b, l ◁ₗ b @ boolean it ∗ (if b then PT x else PF x) ∗ T x)
+    ⊢ subsume (l ◁ₗ n @ int it) M (λ x : A, l ◁ₗ atomic_bool it (PT x) (PF x)) T.
   Proof.
-    iIntros "HT Hl". iDestruct ("HT" with "Hl") as (??) "[? [? ?]]". by iFrame.
+    iIntros "HT Hl". iMod ("HT" with "Hl") as (??) "[? [? ?]]". iModIntro. by iFrame.
   Qed.
   Definition subsume_atomic_bool_own_int_inst := [instance subsume_atomic_bool_own_int].
   Global Existing Instance subsume_atomic_bool_own_int_inst.
 
-  Lemma subsume_atomic_bool_own_bool A l (b : bool) it PT PF T:
+  Lemma subsume_atomic_bool_own_bool A M l (b : bool) it PT PF T:
     (∃ x, (if b then PT x else PF x) ∗ T x)
-    ⊢ subsume (l ◁ₗ b @ boolean it) (λ x : A, l ◁ₗ atomic_bool it (PT x) (PF x)) T.
-  Proof. iIntros "[% [? ?]] Hl". by iFrame. Qed.
+    ⊢ subsume (l ◁ₗ b @ boolean it) M (λ x : A, l ◁ₗ atomic_bool it (PT x) (PF x)) T.
+  Proof. iIntros "[% [? ?]] Hl !>". by iFrame. Qed.
   Definition subsume_atomic_bool_own_bool_inst := [instance subsume_atomic_bool_own_bool].
   Global Existing Instance subsume_atomic_bool_own_bool_inst.
 
   Lemma type_read_atomic_bool l β it ot PT PF mc T:
-    (⌜match ot with | BoolOp => it = u8 | IntOp it' => it = it' | _ => False end⌝ ∗
-      ∀ b v,
-      case_destruct b (λ (b : bool) _,
-        (* TODO: Should this have a trace? *)
-        (if b then PT else PF) -∗
-        (if b then PT else PF) ∗
-        T v (atomic_bool it PT PF) (b @ boolean it)))
-    ⊢ typed_read_end true ⊤ l β (atomic_bool it PT PF) ot mc T.
+    typed_read_end true ⊤ l β (atomic_bool it PT PF) ot mc T :-
+      exhale ⌜match ot with | BoolOp => it = u8 | IntOp it' => it = it' | _ => False end⌝;
+      ∀ (b : bool) (v : val), b0, _ ← destruct b;
+      inhale if b0 then PT else PF;
+      exhale if b0 then PT else PF;
+      {T v (atomic_bool it PT PF) (b0 @ boolean it)} .
   Proof.
     iIntros "[%Hot HT]".
     iApply typed_read_end_mono_strong; [done|]. destruct β.
@@ -112,10 +110,12 @@ Section programs.
   Global Existing Instance type_read_atomic_bool_inst | 10.
 
   Lemma type_write_atomic_bool l β it ot PT PF v ty T:
-    (v ◁ᵥ ty -∗
-     ⌜match ot with | BoolOp => it = u8 | IntOp it' => it = it' | _ => False end⌝ ∗
-     ∃ b, v ◁ᵥ b @ boolean it ∗ (if b then PT else PF) ∗ T (atomic_bool it PT PF))
-    ⊢ typed_write_end true ⊤ ot v ty l β (atomic_bool it PT PF) T.
+    typed_write_end true ⊤ ot v ty l β (atomic_bool it PT PF) T :-
+      inhale v ◁ᵥ ty;
+      exhale ⌜match ot with | BoolOp => it = u8 | IntOp it' => it = it' | _ => False end⌝;
+      ∃ b : bool, exhale v ◁ᵥ b @ boolean it;
+      exhale if b then PT else PF;
+      {T (atomic_bool it PT PF)}.
   Proof.
     iIntros "HT". iApply typed_write_end_mono_strong; [done|].
     iIntros "Hv Hl". iModIntro.

@@ -1,6 +1,6 @@
 From iris.program_logic Require Export weakestpre.
 From iris.base_logic.lib Require Export gen_heap.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import proofmode.
 From iris.program_logic Require Import ectx_lifting.
 From lithium.tutorial Require Export lang notation.
 From lithium.tutorial Require Import tactics.

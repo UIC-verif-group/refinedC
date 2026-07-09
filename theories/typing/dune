@@ -1,6 +1,6 @@
-(coq.theory
+(rocq.theory
  (name refinedc.typing)
  (package refinedc)
  (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (synopsis "Lithium")
- (theories caesium lithium stdpp iris RecordUpdate Ltac2))
+ (theories caesium lithium Stdlib stdpp iris RecordUpdate Ltac2))

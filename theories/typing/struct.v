@@ -196,7 +196,7 @@ Section struct.
     - destruct tys => //=. rewrite offset_of_cons; eauto. case_decide => //=. iFrame.
       iSplitL "Hl1". {
         iApply (big_sepL2_impl with "Hl1"). iIntros "!#" (k n ty Hm ?) "Hl".
-        move: Hm => /(elem_of_list_lookup_2 _ _ _) ?.
+        move: Hm => /(list_elem_of_lookup_2 _ _ _) ?.
         rewrite offset_of_cons; eauto. case_decide; last by rewrite shift_loc_assoc_nat.
         move: HND => /= /(NoDup_cons_1_1 _ _). set_solver.
       }
@@ -207,18 +207,18 @@ Section struct.
       iSplit. { iApply loc_in_bounds_split. eauto. }
       iDestruct ("Hs" with "[Htys]") as (?) "[_ $]".
       iApply (big_sepL2_impl with "Htys"). iIntros "!#" (k n ty Hm ?) "Hl".
-      move: Hm => /(elem_of_list_lookup_2 _ _ _) ?.
+      move: Hm => /(list_elem_of_lookup_2 _ _ _) ?.
       rewrite offset_of_cons; eauto. case_decide; last by rewrite shift_loc_assoc_nat.
       move: HND => /= /(NoDup_cons_1_1 _ _). set_solver.
     - iFrame. iSplitL "Hl1". {
         iApply (big_sepL2_impl with "Hl1"). iIntros "!#" (k n ty Hm ?) "Hl".
-        move: Hm => /(elem_of_list_lookup_2 _ _ _) ?.
+        move: Hm => /(list_elem_of_lookup_2 _ _ _) ?.
         rewrite offset_of_cons; eauto. case_decide => //. by rewrite shift_loc_assoc_nat.
       }
       iIntros (tys') "Htys".
       iDestruct ("Hs" with "[Htys]") as (?) "[_ $]" => //; last by iSplit.
       iApply (big_sepL2_impl with "Htys"). iIntros "!#" (k n ty Hm ?) "Hl".
-      move: Hm => /(elem_of_list_lookup_2 _ _ _) ?.
+      move: Hm => /(list_elem_of_lookup_2 _ _ _) ?.
       rewrite offset_of_cons; eauto. case_decide => //. by rewrite shift_loc_assoc_nat.
   Qed.
 
@@ -254,7 +254,7 @@ Section struct.
     AllocAlive (struct sl tys) β P.
   Proof.
     revert select (TCExists _ _).
-    rewrite TCExists_Exists Exists_exists => -[x [/(elem_of_list_lookup_1 _ _) [i Hx] ?]].
+    rewrite TCExists_Exists Exists_exists => -[x [/(list_elem_of_lookup_1 _ _) [i Hx] ?]].
     constructor. iIntros (l) "HP Hl".
     iDestruct (struct_focus with "Hl") as "[Hl _]".
     iDestruct (big_sepL2_length with "Hl") as %Hlen.
@@ -265,11 +265,11 @@ Section struct.
     by iApply (alloc_alive_loc_mono with "Hl").
   Qed.
 
-  Lemma struct_mono A sl tys1 tys2 l β T:
-    subsume (l ◁ₗ{β} struct sl tys1) (λ x : A, l ◁ₗ{β} struct sl (tys2 x)) T :-
+  Lemma struct_mono A M sl tys1 tys2 l β T:
+    subsume (l ◁ₗ{β} struct sl tys1) M (λ x : A, l ◁ₗ{β} struct sl (tys2 x)) T :-
       iterate: zip (field_names sl.(sl_members)) tys1 {{e T,
         inhale (l at{sl}ₗ e.1 ◁ₗ{β} e.2); return T}};
-      ∃ x, exhale ⌜length tys1 = length (tys2 x)⌝;
+      ‖M‖ ∃ x, exhale ⌜length tys1 = length (tys2 x)⌝;
       iterate: zip (field_names sl.(sl_members)) (tys2 x) {{e T,
         exhale (l at{sl}ₗ e.1 ◁ₗ{β} e.2); return T}};
       return T x.
@@ -284,7 +284,7 @@ Section struct.
       iIntros "Hinv HT". erewrite drop_S; [|done]. erewrite (drop_S _ _ i); [|done] => /=.
       iDestruct "Hinv" as "[Hl $]". by iApply "HT".
     }
-    iDestruct "HG" as (x Hlen) "HG".
+    iMod "HG" as (x Hlen) "HG".
     pose (INV := (λ i,
       [∗ list] n;ty ∈ take i (field_names (sl_members sl));take i (tys2 x), l at{sl}ₗ n ◁ₗ{β} ty)%I).
     iDestruct (iterate_elim0 INV with "HG [] [#]") as "[Hinv HG]"; unfold INV; clear INV.
@@ -293,16 +293,16 @@ Section struct.
       iIntros "Hinv [? $]". erewrite take_S_r; [|done]. erewrite take_S_r; [|done].
       rewrite big_sepL2_snoc. iFrame.
     }
-    rewrite !length_zip_with !take_ge; [|lia..]. iExists _. iFrame.
+    rewrite !length_zip_with !take_ge; [|lia..]. iModIntro. iFrame.
     by iApply "Hc".
   Qed.
   Definition struct_mono_inst := [instance struct_mono].
   Global Existing Instance struct_mono_inst.
 
-  Lemma struct_mono_val A sl tys1 tys2 v T:
-    subsume (v ◁ᵥ struct sl tys1) (λ x : A, v ◁ᵥ struct sl (tys2 x)) T :-
+  Lemma struct_mono_val A M sl tys1 tys2 v T:
+    subsume (v ◁ᵥ struct sl tys1) M (λ x : A, v ◁ᵥ struct sl (tys2 x)) T :-
       vs ← iterate: tys1 with [] {{e T vs, ∀ v, inhale (v ◁ᵥ e); return T (vs ++ [v])}};
-      ∃ x, exhale ⌜length tys1 = length (tys2 x)⌝;
+      ‖M‖ ∃ x, exhale ⌜length tys1 = length (tys2 x)⌝;
       iterate: zip vs (tys2 x) {{e T, exhale (e.1 ◁ᵥ e.2); return T}};
       return T x.
   Proof.
@@ -318,17 +318,17 @@ Section struct.
       iDestruct "Hinv" as "[Hl $]". iDestruct ("HT" with "[$]") as "HT". iExists _. iFrame.
       by erewrite take_S_r.
     }
-    iDestruct "HG" as (x Hlen2) "HG". subst.
+    iMod "HG" as (x Hlen2) "HG". subst.
     pose (INV := (λ i,
       [∗ list] v;ty ∈ take i vs;take i (tys2 x), v ◁ᵥ ty)%I).
     iDestruct (iterate_elim0 INV with "HG [] [#]") as "[Hinv HG]"; unfold INV; clear INV.
     { by rewrite !take_0. } {
       iIntros "!>" (i ? ? (?&?&?&Hvs&?)%lookup_zip_with_Some); simplify_eq/=.
-      iIntros "Hinv [? $]". rewrite lookup_take in Hvs. 2: { rewrite Hlen2. by apply: lookup_lt_Some. }
+      iIntros "Hinv [? $]". rewrite lookup_take_lt in Hvs. 2: { rewrite Hlen2. by apply: lookup_lt_Some. }
       erewrite take_S_r; [|done]. erewrite take_S_r; [|done].
       rewrite big_sepL2_snoc. iFrame.
     }
-    rewrite !length_zip_with !take_ge; [|lia..]. iExists _. iFrame.
+    rewrite !length_zip_with !take_ge; [|lia..]. iModIntro. iFrame.
     by iApply "Hc".
   Qed.
   Definition struct_mono_val_inst := [instance struct_mono_val].
@@ -440,29 +440,29 @@ Section struct.
       all: by iFrame.
   Qed.
 
-  Lemma uninit_struct_simpl_hyp l β (s : struct_layout) T:
-    (l ◁ₗ{β} (struct s (uninit <$> omap (λ '(n, ly), const ly <$> n) s.(sl_members))) -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ{β} uninit s) T.
+  Lemma uninit_struct_simpl_hyp l β (s : struct_layout) M T:
+    (l ◁ₗ{β} (struct s (uninit <$> omap (λ '(n, ly), const ly <$> n) s.(sl_members))) -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ{β} uninit s) M T.
   Proof. iIntros "HT Hl". rewrite uninit_struct_equiv. by iApply "HT". Qed.
   Definition uninit_struct_simpl_hyp_inst := [instance uninit_struct_simpl_hyp with 0%N].
   Global Existing Instance uninit_struct_simpl_hyp_inst.
 
-  Lemma uninit_struct_simpl_goal l β (s : struct_layout) T:
+  Lemma uninit_struct_simpl_goal l β (s : struct_layout) M T:
     l ◁ₗ{β} (struct s (uninit <$> omap (λ '(n, ly), const ly <$> n) s.(sl_members))) ∗ T
-    ⊢ simplify_goal (l ◁ₗ{β} uninit s) T.
-  Proof. iIntros "[? $]". by rewrite uninit_struct_equiv. Qed.
+    ⊢ simplify_goal M (l ◁ₗ{β} uninit s) T.
+  Proof. iIntros "[? $] !>". by rewrite uninit_struct_equiv. Qed.
   Definition uninit_struct_simpl_goal_inst := [instance uninit_struct_simpl_goal with 50%N].
   Global Existing Instance uninit_struct_simpl_goal_inst.
 
-  Lemma subsume_struct_uninit A β sl ly tys l T :
-    subsume (l ◁ₗ{β} struct sl tys) (λ x : A, l ◁ₗ{β} uninit ly) T :-
+  Lemma subsume_struct_uninit A M β sl ly tys l T :
+    subsume (l ◁ₗ{β} struct sl tys) M (λ x : A, l ◁ₗ{β} uninit ly) T :-
       exhale ⌜ly = layout_of sl⌝;
-      x ← {subsume (l ◁ₗ{β} struct sl tys) (λ x : A,
+      x ← {subsume (l ◁ₗ{β} struct sl tys) M (λ x : A,
              l ◁ₗ{β} struct sl (uninit <$> omap (λ '(n, ly0), const ly0 <$> n) (sl_members sl)))};
       return T x.
   Proof.
-    iIntros "[-> Ht] Hstruct". iDestruct ("Ht" with "Hstruct") as "[%x Ht]".
-    iExists x. by rewrite uninit_struct_equiv.
+    iIntros "[-> Ht] Hstruct". iMod ("Ht" with "Hstruct") as "[%x Ht]".
+    iModIntro. iExists x. by rewrite uninit_struct_equiv.
   Qed.
   Definition subsume_struct_uninit_inst := [instance subsume_struct_uninit].
   Global Existing Instance subsume_struct_uninit_inst.

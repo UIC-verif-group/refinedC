@@ -23,10 +23,12 @@ Section proofs.
     (* Run the automation. *)
     repeat liRStep; liShow.
     liInst (λ x, x.1ₗ = id).
+    unfold hyp_spinlock_t_invariant.
     repeat liRStep; liShow.
     (* Establish the invariant *)
-    liFromSyntax. rewrite right_id. iExists 0, 0.
-    iFrame. iSplit; [ done | by iApply ticket_range_empty ].
+    liFromSyntax. rewrite right_id. iModIntro. iFrame.
+    (* TODO: add simplify_goal rule for this *)
+    by iApply ticket_range_empty.
     Unshelve. all: unshelve_sidecond; sidecond_hook; prepare_sideconditions; normalize_and_simpl_goal; try solve_goal; unsolved_sidecond_hook.
   Qed.
 
@@ -64,66 +66,58 @@ Section proofs.
     - (* #0 Initial block, running the nested loop for the first time. *)
       destruct s.
       + repeat liRStep; liShow.
-        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "([%%]&?&?&?&?&?&?)".
+        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "(?&?&[%%]&?&?&?&?)".
         repeat liRStep; liShow.
         rewrite /hyp_spinlock_t_invariant.
         repeat liRStep; liShow.
-        liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next).
-        repeat liRStep; liShow.
       + repeat liRStep; liShow.
-        iExists (Shr, tytrue). iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue). iSplitR; first by simpl.
         iDestruct select (inv _ _) as "#Hinv".
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner next) "(%&Howner&Hnext&Hrest)".
+        iDestruct "Inv" as (owner next) "(Howner&Hnext&%&Hrest)".
         iApply typed_read_end_mono_strong; [done|]. iIntros "_ !>".
         iExists _, _, True%I. iFrame. iSplit; [done|].
         unshelve iApply type_read_copy. { apply _. } simpl.
         iSplit; [done|]. iSplit; [iPureIntro; solve_ndisj|]. iIntros (v) "_ Hl Hv !>".
         iExists tytrue, (next @ int u16)%I. iSplit; [done|]. iSplit; [done|]. iModIntro.
         iSplitL "Howner Hrest Hl Hv". {
-          iNext. rewrite /hyp_spinlock_t_invariant. iExists owner, next.
-          iFrame "Hrest". iSplit; first done. iFrame.
+          iNext. rewrite /hyp_spinlock_t_invariant. by iFrame.
         }
         iIntros "_". repeat liRStep; liShow.
     - (* #1 First loop (after the initial run), checking if we got the ticket. *)
       destruct s.
-      + repeat liRStep; liShow. iIntros "Hb".
+      + repeat liRStep; liShow. iIntros "!> Hb".
         repeat liRStep; liShow.
-        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "([%%]&?&?&?&?&?&?)".
+        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "(?&?&[%%]&?&?&?&?)".
         repeat liRStep; liShow.
         rewrite /hyp_spinlock_t_invariant.
         repeat liRStep; liShow.
-        liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next).
+      + repeat liRStep; liShow. iIntros "!> Hb".
         repeat liRStep; liShow.
-      + repeat liRStep; liShow. iIntros "Hb".
-        repeat liRStep; liShow.
-        iExists (Shr, tytrue); iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
         iDestruct select (inv _ _) as "#Hinv".
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner next) "(%&Howner&Hnext&Hrest)".
+        iDestruct "Inv" as (owner next) "(Howner&Hnext&%&Hrest)".
         iApply typed_read_end_mono_strong; [done|]. iIntros "_ !>".
         iExists _, _, True%I. iFrame.
         unshelve iApply type_read_copy. { apply _. } simpl.
         iSplit; [done|]. iSplit; [iPureIntro; solve_ndisj|]. iIntros (v') "_ Hl Hv !>".
         iExists tytrue, (next @ int u16)%I. iSplit; [done|]. iSplit; [done|]. iModIntro.
         iSplitL "Howner Hrest Hl Hv". {
-          iNext. rewrite /hyp_spinlock_t_invariant. iExists owner, next.
-          iFrame "Hrest". iSplit; first done. iFrame.
+          iNext. rewrite /hyp_spinlock_t_invariant. by iFrame.
         }
         iIntros "_". repeat liRStep; liShow.
     - (* #7 Code that eventually goes to the CAS and takes care of the loop. *)
       destruct s.
       + liRStepUntil @typed_if. do 4 liRStep; liShow.
         * repeat liRStep; liShow.
-          iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "([%%]&?&?&?&?&?&?)".
+          iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "(?&?&[%%]&?&?&?&?)".
           repeat liRStep; liShow.
           rewrite /hyp_spinlock_t_invariant.
           repeat liRStep; liShow.
-          liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next).
-          repeat liRStep; liShow.
         * liRStepUntil typed_cas.
-          iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "([%%]&?&?&?&?&?&?)".
-          iIntros "???" (Φ) "HΦ".
+          iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "(?&?&[%%]&?&?&?&?)".
+          iIntros "!> ???" (Φ) "HΦ".
           destruct (decide (next = i)) as [<-|] .
           ** iRename select (_ ◁ₗ next @ int u16)%I into "Hnext".
              iRename select (_ ◁ₗ (next + 1) @ int u16)%I into "Hnext+1".
@@ -135,13 +129,11 @@ Section proofs.
              repeat liRStep; liShow.
              rewrite /hyp_spinlock_t_invariant.
              repeat liRStep; liShow.
-             liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next + 1).
-             repeat liRStep; liShow.
              iRename select (ticket_range _ _ _) into "Htks".
              iDestruct (split_first_ticket with "Htks") as "[Hnext $]".
              { split; last by lia. by transitivity (min_int u16) => //. }
              iRename select (_ ∨ _)%I into "Hcases".
-             iSplitL "Hcases".
+             iModIntro. iSplitL "Hcases".
              { iDestruct "Hcases" as "[[H %]|H]"; [iLeft | iRight] => //. iSplitL => //. iPureIntro. lia. }
              repeat liRStep; liShow.
           ** iRename select (_ ◁ₗ next @ int u16)%I into "Hnext".
@@ -155,29 +147,26 @@ Section proofs.
              repeat liRStep; liShow.
              rewrite /hyp_spinlock_t_invariant.
              repeat liRStep; liShow.
-             liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next).
-             repeat liRStep; liShow.
       + liRStepUntil @typed_if. do 4 liRStep; liShow.
         * repeat liRStep; liShow.
-          iExists (Shr, tytrue); iSplitR; first by simpl.
+          iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
           iDestruct select (inv _ _) as "#Hinv".
           iInv "Hinv" as ">Inv".
-          iDestruct "Inv" as (owner next) "(%&Howner&Hnext&Hrest)".
+          iDestruct "Inv" as (owner next) "(Howner&Hnext&%&Hrest)".
           iApply typed_read_end_mono_strong; [done|]. iIntros "_ !>".
           iExists _, _, True%I. iFrame. iSplit; [done|].
           unshelve iApply type_read_copy. { apply _. } simpl.
           iSplit; [done|]. iSplit; [iPureIntro; solve_ndisj|]. iIntros (v') "_ Hl Hv !>".
           iExists tytrue, (next @ int u16)%I. iSplit; [done|]. iSplit; [done|]. iModIntro.
           iSplitL "Howner Hrest Hl Hv". {
-            iNext. rewrite /hyp_spinlock_t_invariant. iExists owner, next.
-            iFrame "Hrest". iSplit; first done. iFrame.
+            iNext. rewrite /hyp_spinlock_t_invariant. by iFrame.
           }
           iIntros "_". repeat liRStep; liShow.
         * liRStepUntil typed_cas.
-          iIntros "???" (Φ) "HΦ".
+          iIntros "!> ???" (Φ) "HΦ".
           iDestruct select (inv _ _) as "#Hinv".
           iInv "Hinv" as ">Inv" "Hclose_inv".
-          iDestruct "Inv" as (owner next) "([%%]&Howner&Hnext&Hrest)".
+          iDestruct "Inv" as (owner next) "(Howner&Hnext&[%%]&Hrest)".
           destruct (decide (next = i)) as [<-|] .
           ** iRename select (_ ◁ₗ next @ int u16)%I into "Hnext".
              iRename select (_ ◁ₗ (next + 1) @ int u16)%I into "Hnext+1".
@@ -214,29 +203,26 @@ Section proofs.
     - (* #4 Final loop: checking if we are the owner. *)
       destruct s.
       + repeat liRStep; liShow.
-        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "([%%]&?&?&?&?&?&?)".
+        iDestruct select (hyp_spinlock_t_invariant _ _ _) as (owner next) "(?&?&[%%]&?&?&?&?)".
         liRStepUntil @typed_if. do 4 liRStep; liShow.
         * repeat liRStep; liShow. rewrite /hyp_spinlock_t_invariant. repeat liRStep; liShow.
-          liInst (λ x, x.2ₗ = owner ∧ x.1ₗ = next).
-          repeat liRStep; liShow.
-        * repeat liRStep; liShow. rewrite /hyp_spinlock_t_invariant. repeat liRStep; liShow.
-          liInst (λ x, x.2ₗ = i ∧ x.1ₗ = next).
+        * repeat liRStep; liShow. rewrite /hyp_spinlock_t_invariant.
+          liRStepUntil (_ ∗ _)%I.
           iDestruct select (_ ∨ _)%I as "[[Ht _]|Htok]".
           { iExFalso. iRevert "Ht". iRename select (ticket _ _) into "Ht"; iRevert "Ht".
             iIntros "Ht1 Ht2". by iApply (ticket_non_duplicable with "Ht1 Ht2"). }
           iAssert (⌜i ≠ next⌝)%I as "%".
           { iIntros (<-). iRename select (ticket _ _) into "Hticket".
             iRename select (ticket_range _ i _) into "Hrange".
-            iDestruct (ticket_not_NO_TICKET with "Hticket") as %Hi.
             iApply (ticket_already_in_range with "[] Hrange Hticket").
             iPureIntro. apply elem_of_seqZ. lia. }
           repeat liRStep; liShow.
-          iSplitR "Htok"; last by iFrame. iLeft. iSplit => //. iPureIntro. lia.
+          iModIntro. iSplitR "Htok"; last by iFrame. iLeft. iSplit => //. iPureIntro. lia.
       + repeat liRStep; liShow.
-        iExists (Shr, tytrue); iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
         iDestruct select (inv _ _) as "#Hinv".
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner next) "(%&Howner&Hnext&Hrest)".
+        iDestruct "Inv" as (owner next) "(Howner&Hnext&%&Hrest)".
         iApply typed_read_end_mono_strong; [done|]. iIntros "_ !>".
         iExists _, _, True%I. iFrame. iSplit; [done|].
         unshelve iApply type_read_copy. { apply _. } simpl.
@@ -244,8 +230,7 @@ Section proofs.
         iExists tytrue, (owner @ int u16)%I. iSplit; [done|]. iSplit; [done|]. iModIntro.
         destruct (decide (i ≠ owner)).
         * iSplitL "Hnext Hrest Hl Hv". {
-            iNext. rewrite /hyp_spinlock_t_invariant. iExists owner, next.
-            iFrame "Hrest". iSplit; first done. iFrame.
+            iNext. rewrite /hyp_spinlock_t_invariant. by iFrame.
           }
           iIntros "_". repeat liRStep; liShow.
         * assert (i = owner) as -> by lia.
@@ -258,7 +243,6 @@ Section proofs.
           iAssert (⌜owner < next⌝)%I as %?.
           { destruct (decide (owner < next)); first done. iExFalso.
             iDestruct (ty_size_eq _ (IntOp _) MCNone with "Hv") as %?; [done|].
-            iDestruct (ticket_not_NO_TICKET with "Hticket") as %Howner.
             iApply (ticket_already_in_range with "[] Hr2 Hticket").
             iPureIntro. clear Q. apply elem_of_seqZ. lia. }
           iSplitL "Hnext Hl Hv Hfrag Hr1 Hr2 Hticket". {
@@ -279,12 +263,12 @@ Section proofs.
     (* Extract the real token and our ticket number (owner) with a witness. *)
     iDestruct select (spinlock_token _ _) as (owner) "[Htok H●]".
     (* Run the automation, until we must look into the invariant. *)
-    repeat liRStep; liShow. iIntros "Hinv". repeat liRStep; liShow.
+    repeat liRStep; liShow. iIntros "!> Hinv". repeat liRStep; liShow.
     (* We do a different proof depending on the ownership state. *)
     destruct s.
     - (* [Own] case: we have full ownership. *)
       iDestruct select (hyp_spinlock_t_invariant _ _ _) as
-          (owner' next) "([%%]&Howner&?&H◯&Hr1&?&Hcases)".
+          (owner' next) "(Howner&?&[%%]&H◯&Hr1&?&Hcases)".
       (* We have the token: we are the owner and our ticket is in [Hcases]. *)
       iDestruct (owner_auth_agree with "H● H◯") as %<-.
       iDestruct "Hcases" as "[[Hticket %] | Htok']"; last first.
@@ -297,27 +281,32 @@ Section proofs.
       (* Run the automation up to the [if] statement. *)
       liRStepUntil @typed_if. do 4 liRStep; liShow.
       + (* We have the last ticket. The next owner will be 0, we update. *)
+        iModIntro.
         iMod (owner_auth_update _ _ _ _ 0%nat with "H● H◯") as "[??]".
         (* Run the automation to the end of the function. *)
-        repeat liRStep; liShow. liFromSyntax. rewrite right_id.
+        repeat liRStep; liShow.
         (* Establish the invariant again, placing the token back inside. *)
-        rewrite /hyp_spinlock_t_invariant. iExists 0, 0. iFrame.
-        iSplit; first done. iSplitR; first by iApply ticket_range_empty.
-        iRight. iFrame "Htok". by iExists _.
+        rewrite /hyp_spinlock_t_invariant.
+        repeat liRStep; liShow.
+        liFromSyntax. iModIntro.
+        iSplitR; first by iApply ticket_range_empty. iSplit; [|done].
+        iFrame. iRight. iFrame.
       + (* We do not have the last ticket, we do not reset the queue. *)
+        iModIntro.
         iMod (owner_auth_update _ _ _ _ (owner + 1) with "H● H◯") as "[??]".
         (* Run the automation to the end of the function. *)
-        repeat liRStep; liShow. liFromSyntax. rewrite right_id.
+        repeat liRStep; liShow.
         (* Establish the invariant again, placing the token back inside. *)
-        rewrite /hyp_spinlock_t_invariant. iExists (owner + 1), next. iFrame.
-         iSplit. { iPureIntro. lia. } iRight. iFrame "Htok". by iExists _.
+        rewrite /hyp_spinlock_t_invariant.
+        repeat liRStep; liShow.
+        liFromSyntax. iModIntro. iSplit; [|done]. iRight. iFrame.
     - (* [Shr] case: we have shared ownership, we first run the automation. *)
       repeat liRStep; liShow.
       (* We must open the invariant to read. *)
-      iExists (Shr, tytrue); iSplitR; first by simpl.
+      iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
       iDestruct select (inv _ _) as "#Hinv".
       iInv "Hinv" as ">Inv".
-      iDestruct "Inv" as (owner' next) "(%&Howner&Hnext&H◯&Hrest)".
+      iDestruct "Inv" as (owner' next) "(Howner&Hnext&%&H◯&Hrest)".
       iDestruct (owner_auth_agree with "H● H◯") as %<-.
       iApply typed_read_end_mono_strong; [done|]. iIntros "_ !>".
       iExists _, _, True%I. iFrame. iSplit; [done|].
@@ -325,17 +314,16 @@ Section proofs.
       iSplit; [done|]. iSplit; [iPureIntro; solve_ndisj|]. iIntros (v') "_ Hl Hv !>".
       iExists tytrue, (owner @ int u16)%I. iSplit; [done|]. iSplit; [done|]. iModIntro.
       iSplitL "Hnext Hrest Hl Hv H◯". {
-          iNext. rewrite /hyp_spinlock_t_invariant. iExists owner, next.
-          iFrame "Hrest". iSplit; first done. iFrame.
+          iNext. rewrite /hyp_spinlock_t_invariant. by iFrame.
       }
       iIntros "_".
       (* Run the automation to the write to [owner] of each branch. *)
       repeat liRStep; liShow.
       + (* We have the last ticket. The next owner will be 0, we update. *)
         (* We must open the invariant again. *)
-        iExists (Shr, tytrue); iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner' next') "([%%]&Howner&Hnext&H◯&Htk1&Htk2&Hcases)".
+        iDestruct "Inv" as (owner' next') "(Howner&Hnext&[%%]&H◯&Htk1&Htk2&Hcases)".
         (* We have the token: we are the owner and our ticket is in [Hcases]. *)
         iDestruct (owner_auth_agree with "H● H◯") as %<-.
         iDestruct "Hcases" as "[[Hticket %] | Htok']"; last first.
@@ -365,9 +353,9 @@ Section proofs.
         { iDestruct (ticket_range_insert_r with "Htk1 Hticket") as "Hr" => //. }
         (* Run the automation up to the write to the [next] field, open invariant. *)
         repeat liRStep; liShow.
-        iExists (Shr, tytrue); iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner' next'') "([%%]&Howner&Hnext&H◯&Htr1&Htr2&Hcases)".
+        iDestruct "Inv" as (owner' next'') "(Howner&Hnext&[%%]&H◯&Htr1&Htr2&Hcases)".
         (* We can get [owner' = 0] since we have all the tickets. *)
         iAssert ⌜owner' = 0⌝%I as %->.
         { destruct (decide (owner' = 0)) => //. iExFalso.
@@ -401,9 +389,9 @@ Section proofs.
         repeat liRStep; liShow.
       + (* We do not have the last ticket, we do not reset the queue. *)
         (* We must open the invariant again. *)
-        iExists (Shr, tytrue); iSplitR; first by simpl.
+        iModIntro. iExists (Shr, tytrue); iSplitR; first by simpl.
         iInv "Hinv" as ">Inv".
-        iDestruct "Inv" as (owner' next') "([% %]&Howner&Hnext&H◯&Htk1&Htk2&Hcases)".
+        iDestruct "Inv" as (owner' next') "(Howner&Hnext&[% %]&H◯&Htk1&Htk2&Hcases)".
         (* We have the token: we are the owner and our ticket is in [Hcases]. *)
         iDestruct (owner_auth_agree with "H● H◯") as %<-.
         iDestruct "Hcases" as "[[Hticket %] | Htok']"; last first.

@@ -46,7 +46,7 @@ void free_btree(btree_t* t){
                         "replicate (sz - n)%nat (uninit i32 : type)}>")]]
 [[rc::tactics("destruct (decide (i = s)); by naive_solver lia.")]]
 [[rc::tactics(// FIXME
-  "move: (elem_of_list_lookup_1 _ _ H14) => [i Hi]. "
+  "move: (list_elem_of_lookup_1 _ _ H14) => [i Hi]. "
   "destruct (decide (y = k)); [ done | exfalso ]. "
   "assert (k < y) as Hky by lia. "
   "assert (i < s)%nat as Hle by by eapply (StronglySorted_lookup_index_lt (R:=(<))). "
@@ -54,17 +54,17 @@ void free_btree(btree_t* t){
 [[rc::tactics(// FIXME
   "apply StronglySorted_insert_drop_take; last done. "
   "* move => z Hz. destruct (l !! z) eqn:?; naive_solver lia. "
-  "* move: (elem_of_list_lookup_2 l s y H7) => Hy. rewrite H7 /=. "
+  "* move: (list_elem_of_lookup_2 l s y H7) => Hy. rewrite H7 /=. "
   "  assert (k ≠ y); [ by set_solver | by lia ].")]]
 [[rc::tactics(// FIXME
   "assert (s = length l) as -> by lia. assert (k < k); last by lia. "
-  "move: (elem_of_list_lookup_1 _ _ H7) => [i Hi]. "
+  "move: (list_elem_of_lookup_1 _ _ H7) => [i Hi]. "
   "move: (lookup_lt_Some _ _ _ Hi) => Hlt. naive_solver lia.")]]
 [[rc::tactics(// FIXME
   "assert (s = length l) as -> by lia. rewrite drop_all. "
   "apply StronglySorted_app; [ .. | done | by do 2 constructor ]. "
   "move => x y Hx Hy. assert (y = k) as -> by set_solver. "
-  "move: (elem_of_list_lookup_1 _ _ Hx) => [i Hi]. "
+  "move: (list_elem_of_lookup_1 _ _ Hx) => [i Hi]. "
   "move: (lookup_lt_Some _ _ _ Hi) => Hlt. naive_solver lia.")]]
 int key_index(int* ar, int n, int k){
   int slot = 0;

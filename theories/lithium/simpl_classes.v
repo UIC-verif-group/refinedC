@@ -14,66 +14,74 @@ Class SimplForall (T : Type) (n : nat) (e : T → Prop) (Q: Prop) := simpl_foral
 
 (** * [SimplImpl] and [SimplAnd] *)
 
-(** ** [SimplImplUnsafe] and [SimplAndUnsafe] *)
-(** changed = false indicates that P should be introduced into the context in addition to Ps *)
-Class SimplImplUnsafe (changed : bool) (P : Prop) (Ps : Prop) := simpl_impl_unsafe : P → Ps.
-Class SimplAndUnsafe (P : Prop) (Ps : Prop) := simpl_and_unsafe: Ps → P.
+(** ** [SimplAndImpl] *)
+(** changed = false indicates that P should be introduced into the context in addition to Ps
+    safe = true indicates that the simplification preserves provability *)
+Class SimplAndImpl (impl : bool) (safe : bool) (changed : bool)
+  (P Ps : Prop) := {
+  simpl_and_impl :
+    if safe then P ↔ Ps
+    else if impl then P → Ps else Ps → P
+}.
+Global Hint Mode SimplAndImpl + - - ! - : typeclass_instances.
 
-Lemma simpl_impl_unsafe_impl changed (P1 P2 T : Prop) `{!SimplImplUnsafe changed P1 P2} :
+Notation SimplImplUnsafe := (SimplAndImpl true false).
+Notation SimplAndUnsafe := (SimplAndImpl false false true).
+Notation SimplImpl := (SimplAndImpl true true true).
+Notation SimplAnd := (SimplAndImpl false true true).
+Notation SimplBoth P Ps := (∀ b, SimplAndImpl b true true P Ps).
+
+Lemma simpl_impl_unsafe_impl changed safe (P1 P2 T : Prop)
+  `{!SimplAndImpl true safe changed P1 P2} :
   (if changed then (P2 → T) else (P1 → P2 → T)) → (P1 → T).
-Proof. unfold SimplImplUnsafe in *. destruct changed; naive_solver. Qed.
-Lemma simpl_and_unsafe_and (P1 P2 T : Prop) `{!SimplAndUnsafe P1 P2} :
+Proof. destruct SimplAndImpl0. destruct changed, safe; naive_solver. Qed.
+Lemma simpl_and_unsafe safe (P1 P2 : Prop)
+ `{!SimplAndImpl false safe true P1 P2} :
+  P2 → P1.
+Proof. destruct SimplAndImpl0, safe; naive_solver. Qed.
+Lemma simpl_and_unsafe_and safe (P1 P2 T : Prop)
+ `{!SimplAndImpl false safe true P1 P2} :
   P2 ∧ T → P1 ∧ T.
-Proof. unfold SimplAndUnsafe in *. naive_solver. Qed.
+Proof. destruct SimplAndImpl0, safe; naive_solver. Qed.
 
 Global Instance simpland_unsafe_not_neq {A} (x y : A) :
   SimplAndUnsafe (¬ (x ≠ y)) (x = y) | 1000.
-Proof. move => ?. by eauto. Qed.
+Proof. constructor. move => ?. by eauto. Qed.
 
-(** ** [SimplImpl] and [SimplAnd] *)
-(** [SimplImpl] and [SimplAnd] are safe variants which ensure that no
-information is lost. *)
-Class SimplImpl (P : Prop) (Ps : Prop) := simpl_impl : Ps ↔ P.
-Class SimplAnd (P : Prop) (Ps : Prop) := simpl_and: Ps ↔ P.
-Global Instance simplimpl_simplunsafe P Ps {Hi: SimplImpl P Ps} :
-  SimplImplUnsafe true P Ps.
-Proof. unfold SimplImpl, SimplImplUnsafe in *. naive_solver. Qed.
-Global Instance simpland_simplunsafe P Ps {Hi: SimplAnd P Ps} :
-  SimplAndUnsafe P Ps.
-Proof. unfold SimplAnd, SimplAndUnsafe in *. naive_solver. Qed.
+(** To build the symmetric version of a lemma, use the following
+lemmas. See [simpl_instances.v] for an example. *)
+Lemma simpl_and_impl_sym {A} (R : A → A → Prop) {a1 a2 Ps} {impl safe changed}
+  `{!Symmetric R} :
+  SimplAndImpl impl safe changed (R a1 a2) Ps →
+  SimplAndImpl impl safe changed (R a2 a1) Ps.
+Proof. move => [?]. constructor. destruct safe, impl;  naive_solver. Qed.
 
-(** ** [SimplImplRel] and [SimplAndRel] *)
-Class SimplImplRel {A} (R : relation A) (changed : bool) (x1 x2 : A) (Ps : Prop)
-  := simpl_impl_eq: Ps ↔ R x1 x2.
-Class SimplAndRel {A} (R : relation A) (x1 x2 : A) (Ps : Prop)
-  := simpl_and_eq: Ps ↔ R x1 x2.
-Global Instance simpl_impl_rel_inst1 {A} R (x1 x2 : A) Ps `{!SimplImplRel R c x1 x2 Ps} :
-  SimplImpl (R x1 x2) Ps.
-Proof. unfold SimplImplRel, SimplImpl in *. naive_solver. Qed.
-Global Instance simpl_impl_rel_inst2 {A} R (x1 x2 : A) Ps `{!SimplImplRel R c x2 x1 Ps} `{!Symmetric R} :
-  SimplImpl (R x1 x2) Ps.
-Proof. unfold SimplImplRel, SimplImpl in *. naive_solver. Qed.
-Global Instance simpl_and_rel_inst1 {A} R (x1 x2 : A) Ps `{!SimplAndRel R x1 x2 Ps} :
-  SimplAnd (R x1 x2) Ps.
-Proof. unfold SimplAndRel, SimplAnd in *. naive_solver. Qed.
-Global Instance simpl_and_rel_inst2 {A} R (x1 x2 : A) Ps `{!SimplAndRel R x2 x1 Ps} `{!Symmetric R} :
-  SimplAnd (R x1 x2) Ps.
-Proof. unfold SimplAndRel, SimplAnd in *. naive_solver. Qed.
+Lemma simpl_both_sym {A} (R : A → A → Prop) {a1 a2 Ps}
+  `{!Symmetric R} :
+  SimplBoth (R a1 a2) Ps →
+  SimplBoth (R a2 a1) Ps.
+Proof. move => ??. by apply simpl_and_impl_sym. Qed.
 
-(** ** [SimplBoth] *)
-Class SimplBoth (P1 P2 : Prop) := simpl_both: P1 ↔ P2.
-Global Instance simpl_impl_both_inst P1 P2 {Hboth : SimplBoth P1 P2}:
-  SimplImpl P1 P2.
-Proof. unfold SimplBoth in Hboth. split; naive_solver. Qed.
-Global Instance simpl_and_both_inst P1 P2 {Hboth : SimplBoth P1 P2}:
-  SimplAnd P1 P2.
-Proof. unfold SimplBoth in Hboth. split; naive_solver. Qed.
 
-(** ** [SimplBothRel] *)
-Class SimplBothRel {A} (R : relation A) (x1 x2 : A) (P2 : Prop) := simpl_both_eq: R x1 x2 ↔ P2.
-Global Instance simpl_both_rel_inst1 {A} R (x1 x2 : A) P2 `{!SimplBothRel R x1 x2 P2}:
-  SimplBoth (R x1 x2) P2.
-Proof. unfold SimplBothRel, SimplBoth in *. naive_solver. Qed.
-Global Instance simpl_both_rel_inst2 {A} R (x1 x2 : A) P2 `{!SimplBothRel R x2 x1 P2} `{!Symmetric R}:
-  SimplBoth (R x1 x2) P2.
-Proof. unfold SimplBothRel, SimplBoth in *. naive_solver. Qed.
+(* We could use the following Ltac to generate the symmetry instances,
+but one cannot pass terms with holes (like [@eq _]) to notations, so
+it is less useful than one might hope. Ideally, this would be an
+attribute one could add, e.g. using elpi. *)
+Ltac generate_simpl_and_impl_sym print R c :=
+  let do_print t := tryif print then t else idtac in
+  let type_c := type of c in
+  let type_c := eval lazy zeta in type_c in
+  do_print ltac:(idtac "current:" c);
+  do_print ltac:(idtac "type:" type_c);
+  lazymatch type_c with
+  | ∀ (a : ?T), @?P a =>
+    let a := fresh a in
+    notypeclasses refine (λ a, _);
+    let y := eval lazy beta zeta in (c a) in
+    generate_simpl_and_impl_sym print R y
+  | SimplAndImpl _ _ _ _ _ =>
+    refine (simpl_and_impl_sym R c)
+  end.
+
+Notation "'[simplsym' R | x ]" :=
+  ltac:(generate_simpl_and_impl_sym ltac:(fail) open_constr:(R) x) (only parsing).

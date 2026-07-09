@@ -48,8 +48,8 @@ Ltac normalize2 P cont :=
         let r := fresh "r" in
         let Hr := fresh "Hr" in
         first [
-          simple notypeclasses refine (let r := _ in let Hr := _ : Normalize (f' a') r in _); [shelve| unfold r; solve [refine _ ] |];
-          (* simple notypeclasses refine (let r := _ in (λ Hr : Normalize (f' a') r, _) _); [shelve| | unfold r; solve [refine _ ]]; *)
+          simple notypeclasses refine (let r := _ in let Hr := _ : Normalize (f' a') r in _); [shelve| unfold r; solve [typeclasses eauto ] |];
+          (* simple notypeclasses refine (let r := _ in (λ Hr : Normalize (f' a') r, _) _); [shelve| | unfold r; solve [typeclasses eauto ]]; *)
           let r' := eval unfold r in r in
           (* let Hr' := eval unfold Hr in Hr in *)
           unfold r,Normalize in Hr;
@@ -91,7 +91,7 @@ Ltac normalize3 :=
                     [normalize3|normalize3|
                      lazymatch goal with
                      | |- ?A = ?B => change_no_check (Normalize A B)
-                     end; solve [ refine _ ] ]) ||
+                     end; solve [ typeclasses eauto ] ]) ||
                     exact: eq_refl
     | _ => exact: eq_refl
     end
@@ -129,7 +129,7 @@ Ltac normalize4 :=
          refine (eq_ind_r ctx _ _);[|
                                     lazymatch goal with
          | |- ?A = ?B => change_no_check (Normalize A B)
-         end; solve [ refine _ ]
+         end; solve [ typeclasses eauto ]
                                    ]
 
       ) || idtac
@@ -138,7 +138,7 @@ Ltac normalize4 :=
         (* [normalize3|normalize3| *)
          (* lazymatch goal with *)
          (* | |- ?A = ?B => change_no_check (Normalize A B) *)
-         (* end; solve [ refine _ ] ]) || *)
+         (* end; solve [ typeclasses eauto ] ]) || *)
                                     (* exact: eq_refl *)
     | _ => idtac
 (* idtac "end" P *)
@@ -159,7 +159,7 @@ Ltac normalize_goal4 :=
   end.
 
 (* Goal True. *)
-(*   simple notypeclasses refine (let x := _ in let H := _ : Normalize 0 x in _); [shelve| unfold x; solve [refine _ ] |]. *)
+(*   simple notypeclasses refine (let x := _ in let H := _ : Normalize 0 x in _); [shelve| unfold x; solve [typeclasses eauto ] |]. *)
 (*   (* Set Printing All. *) *)
 (*   let Hr := eval unfold H in H in idtac Hr. *)
 (*   notypeclasses refine ( (λ x : Z, λ H : Normalize 0 x, _ ) _ _). *)
@@ -188,7 +188,7 @@ Goal ∀ l i (x : Z),
   (*                   [normalize3|normalize3| *)
   (*                    lazymatch goal with *)
   (*                    | |- ?A = ?B => change_no_check (Normalize true A B) *)
-  (*                    end; solve [ refine _ ] ]. *)
+  (*                    end; solve [ typeclasses eauto ] ]. *)
 
 
   (* progress (refine (tac_f_equal_fn _ _ _ _ _ _ _ _);[ exact: eq_refl..|]). *)
@@ -224,7 +224,7 @@ Goal ∀ l i (x : Z),
   (*                   [normalize3|normalize3| *)
   (*                    lazymatch goal with *)
   (*                    | |- ?A = ?B => change_no_check (Normalize A B) *)
-  (*                    end; solve [ refine _ ] ]). *)
+  (*                    end; solve [ typeclasses eauto ] ]). *)
   (*                   exact: eq_refl. *)
 
   (* normalize3. *)
@@ -232,7 +232,7 @@ Goal ∀ l i (x : Z),
   (*   [normalize3|normalize3| *)
   (*    lazymatch goal with *)
   (*    | |- ?A = ?B => change_no_check (Normalize A B) *)
-  (*    end; solve [ refine _ ] | ]. *)
+  (*    end; solve [ typeclasses eauto ] | ]. *)
 
 
 
@@ -279,7 +279,7 @@ Goal True.
   (* evar (r : (list nat → Prop)).   *)
   (* assert (Normalize (eq (@nil nat)) r) as Hr. unfold r. *)
   (* apply normalize_end. *)
-  (* ; [solve [refine _] |]. *)
+  (* ; [solve [typeclasses eauto] |]. *)
 
   (* have : seq 0%nat 0%nat = []. { simpl. Time normalize_goal. Time normalize_goal2. admit. } *)
   (* have : seq 0%nat 10%nat = []. { simpl. Time normalize_goal. Time normalize_goal2. admit. } *)
@@ -306,7 +306,7 @@ Ltac naive_simpl_go :=
     end
   | |- ?P ∧ ?Q => first [
       progress normalize_goal_and
-    | notypeclasses refine (simpl_and_unsafe_and P _ Q _); [solve [refine _] |]; simpl
+    | notypeclasses refine (simpl_and_unsafe_and _ P _ Q _); [solve [typeclasses eauto] |]; simpl
     | match P with
       | _ ∧ _ => notypeclasses refine (tac_and_assoc _ _ _ _)
       | ∃ _, _ => notypeclasses refine (tac_exist_assoc _ _ _)

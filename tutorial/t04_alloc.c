@@ -67,10 +67,11 @@ void init_talloc() {
   sl_init(&allocator_state.lock);
   allocator_state.data = NULL;
 
-  [[rc::constraints("own global_allocator_state : alloc_state")]]
-  rc_assert;
+  // The following used to be necessary but is not necessary anymore
+  /* [[rc::constraints("own global_allocator_state : alloc_state")]] */
+  /* rc_assert; */
 
-  rc_share(allocator_state);
+  /* rc_share(allocator_state); */
 }
 
  [[rc::tactics("all: try by rewrite /layout_wf -Z.mod_divide // /ly_size/ly_align/=; nia.")]]

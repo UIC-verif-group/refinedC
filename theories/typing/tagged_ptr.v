@@ -55,34 +55,34 @@ Section tagged_ptr.
      RelatedTo (λ x : A, v ◁ᵥ r @ tagged_ptr (β x) (n x) (ty x))%I | 1 :=
      {| rt_fic := FindValOrLoc v r.1 |}.
 
-  Lemma subsume_tagged_ptr A v r1 r2 n1 n2 β1 β2 ty1 ty2 T:
-    (r1.1 ◁ₗ{β1} ty1 -∗ ∃ x, ⌜r1 = r2 x⌝ ∗ ⌜n1 = n2 x⌝ ∗ ⌜β1 = β2 x⌝ ∗ (r2 x).1 ◁ₗ{β2 x} ty2 x ∗ T x)
-    ⊢ subsume (v ◁ᵥ r1 @ tagged_ptr β1 n1 ty1) (λ x : A, v ◁ᵥ (r2 x) @ tagged_ptr (β2 x) (n2 x) (ty2 x)) T.
+  Lemma subsume_tagged_ptr A M v r1 r2 n1 n2 β1 β2 ty1 ty2 T:
+    (r1.1 ◁ₗ{β1} ty1 -∗ ‖M‖ ∃ x, ⌜r1 = r2 x⌝ ∗ ⌜n1 = n2 x⌝ ∗ ⌜β1 = β2 x⌝ ∗ (r2 x).1 ◁ₗ{β2 x} ty2 x ∗ T x)
+    ⊢ subsume (v ◁ᵥ r1 @ tagged_ptr β1 n1 ty1) M (λ x : A, v ◁ᵥ (r2 x) @ tagged_ptr (β2 x) (n2 x) (ty2 x)) T.
   Proof.
     iIntros "HT (?&?&?&?&?)".
-    iDestruct ("HT" with "[$]") as (?) "(->&->&->&?&HT)".
-    iExists _. iFrame.
+    iDestruct ("HT" with "[$]") as ">(%&->&->&->&?&HT)".
+    iModIntro. iExists _. iFrame.
   Qed.
   Definition subsume_tagged_ptr_inst := [instance subsume_tagged_ptr].
   Global Existing Instance subsume_tagged_ptr_inst.
 
-  Lemma subsume_frac_ptr_tagged_ptr A l β (v : val) r n ty1 ty2 m `{!LearnAlignment β ty1 m} T:
+  Lemma subsume_frac_ptr_tagged_ptr A M l β (v : val) r n ty1 ty2 m `{!LearnAlignment β ty1 m} T:
     (l ◁ₗ{β} ty1 -∗ ⌜if m is Some m' then l `aligned_to` m' else True⌝ -∗
-      ∃ x, ⌜l = (r x).1⌝ ∗ ⌜v = (r x).1 +ₗ (r x).2⌝ ∗ ⌜l `aligned_to` (n x)⌝ ∗ ⌜0 ≤ (r x).2 < (n x)⌝ ∗
+      ‖M‖ ∃ x, ⌜l = (r x).1⌝ ∗ ⌜v = (r x).1 +ₗ (r x).2⌝ ∗ ⌜l `aligned_to` (n x)⌝ ∗ ⌜0 ≤ (r x).2 < (n x)⌝ ∗
        loc_in_bounds l (n x) ∗ l ◁ₗ{β} (ty2 x) ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} ty1) (λ x : A, v ◁ᵥ (r x) @ tagged_ptr β (n x) (ty2 x)) T.
+    ⊢ subsume (l ◁ₗ{β} ty1) M (λ x : A, v ◁ᵥ (r x) @ tagged_ptr β (n x) (ty2 x)) T.
   Proof.
     iIntros "HT Hl".
     iDestruct (learnalign_learn with "Hl") as %?.
-    iDestruct ("HT" with "Hl [//]") as (?) "(->&->&%&%&?&?&HT)".
-    iExists _. by iFrame.
+    iDestruct ("HT" with "Hl [//]") as ">(%&->&->&%&%&?&?&HT)".
+    iModIntro. iExists _. by iFrame.
   Qed.
   Definition subsume_frac_ptr_tagged_ptr_inst := [instance subsume_frac_ptr_tagged_ptr].
   Global Existing Instance subsume_frac_ptr_tagged_ptr_inst.
 
-  Lemma simplify_hyp_tagged_ptr_0 v r β n ty `{!CanSolve (r.2 = 0)} T:
-    (v ◁ᵥ r.1 @ frac_ptr β ty -∗ T)
-    ⊢ simplify_hyp (v ◁ᵥ r @ tagged_ptr β n ty) T.
+  Lemma simplify_hyp_tagged_ptr_0 v r β n ty `{!CanSolve (r.2 = 0)} M T:
+    (v ◁ᵥ r.1 @ frac_ptr β ty -∗ ‖M‖ T)
+    ⊢ simplify_hyp (v ◁ᵥ r @ tagged_ptr β n ty) M T.
   Proof.
     unfold CanSolve in *. destruct r as [l ?]. simpl in *. simplify_eq.
     iIntros "HT (->&%&%&?&?)". iApply "HT". rewrite /= shift_loc_0. unfold frac_ptr; simpl_type. by iFrame.

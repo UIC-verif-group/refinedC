@@ -130,3 +130,15 @@ let proof_kind : func_def -> proof_kind = fun def ->
 
 let is_inlined : func_def -> bool = fun def ->
   proof_kind def = Proof_inlined
+
+(* Get the context items required by this function *)
+let get_context_items : func_def_or_decl -> string list = fun def_or_decl ->
+  match def_or_decl with
+  | FDef(def) ->
+      (match def.func_annot with
+      | None -> []
+      | Some(annot) -> List.map fst annot.fa_context)
+  | FDec(annot) ->
+      match annot with
+      | None -> []
+      | Some(annot) -> List.map fst annot.fa_context

@@ -26,6 +26,11 @@ let pp_encoded_patt_name : bool -> string list pp = fun used ff xs ->
   | [x] -> pp_str ff x
   | _   -> pp_str ff "patt__"
 
+let rec pp_as_binders : 'a pp -> 'b pp -> ('a * 'b) list pp = fun ppa ppb ff xs ->
+  match xs with
+  | [] -> ()
+  | (name, ty) :: xs -> fprintf ff " (%a : %a) %a" ppa name ppb ty (pp_as_binders ppa ppb) xs
+
 (* Print projection to get the [i]-th element of a tuple with [n] elements. *)
 let rec pp_projection : int -> int pp = fun n ff i ->
   match n with
@@ -588,6 +593,9 @@ and pp_type_expr_rec : unit pp option -> rec_mode -> type_expr pp =
     let pp_coq_expr wrap = pp_coq_expr wrap (pp false rfnd) in
     match ty with
     (* Don't need explicit wrapping. *)
+    | Ty_list(tys)            ->
+        let pp_sep ff () = fprintf ff "; " in
+        fprintf ff "[@@{type} %a ]" (pp_print_list ~pp_sep (pp false rfnd)) tys
     | Ty_Coq(e)          -> (pp_coq_expr wrap) ff e
     (* Remaining constructors (no need for explicit wrapping). *)
     | Ty_dots            ->
@@ -1024,7 +1032,15 @@ let pp_spec : Coq_path.t -> import list -> inlined_code ->
     (* Simplifications hints for inversing the tag function. *)
     let pp_inversion_hint i (_, (c, args), _) =
       pp "Global Instance simpl_%s_tag_%s c :@;" id c;
-      pp "  SimplBothRel (=) (%s_tag c) %i%%nat (" id i;
+      pp "  SimplBoth (%s_tag c = %i%%nat) (" id i;
+      if args <> [] then pp "∃";
+      let fn (x,e) = pp " (%s : %a)" x (pp_simple_coq_expr false) e in
+      List.iter fn args;
+      if args <> [] then pp ", ";
+      pp "c = %s" c; List.iter (fun (x,_) -> pp " %s" x) args; pp ").@;";
+      pp "Proof. split; destruct c; naive_solver. Qed.\n@;";
+      pp "Global Instance simpl_%s_tag_%s_sym c :@;" id c;
+      pp "  SimplBoth (%i%%nat = %s_tag c) (" i id;
       if args <> [] then pp "∃";
       let fn (x,e) = pp " (%s : %a)" x (pp_simple_coq_expr false) e in
       List.iter fn args;
@@ -1110,7 +1126,8 @@ let pp_spec : Coq_path.t -> import list -> inlined_code ->
       | [] -> ()
       | _  -> pp "; "; pp_sep ", " pp_type_expr ff tys
     in
-    pp "@;Definition type_of_%s :=@;  @[<hov 2>" id;
+    let pp_context = (pp_as_binders pp_str (pp_simple_coq_expr true)) in
+    pp "@;Definition type_of_%s %a :=@;  @[<hov 2>" id pp_context annot.fa_context;
     let pp_prod = pp_as_prod (pp_simple_coq_expr true) in
     pp "fn(∀ %a : %a%a; %a)@;→ ∃ %a : %a, %a; %a.@]"
       (pp_as_tuple pp_str) param_names pp_prod param_types
@@ -1141,6 +1158,15 @@ let pp_spec : Coq_path.t -> import list -> inlined_code ->
   (* Printing inlined code (from comments). *)
   pp_inlined false (Some "final") inlined.ic_final;
   pp "@]"
+
+(* Extract the value of a list of options *)
+let ( let* ) o f =
+  match o with
+  | None -> None
+  | Some x -> f x
+let list_option_lift : 'a option list -> 'a list option = fun l ->
+  let fn arg acc = let* acc = acc in let* arg = arg in Some (arg :: acc) in
+  List.fold_right fn l (Some [])
 
 let pp_proof : Coq_path.t -> func_def -> import list -> string list
     -> proof_kind -> Coq_ast.t pp =
@@ -1207,7 +1233,9 @@ let pp_proof : Coq_path.t -> func_def -> import list -> string list
     | [] -> ()
     | _  -> fprintf ff " (%a : loc)" (pp_sep " " pp_str) xs
   in
-  pp "@[<v 2>Lemma type_%s%a :@;" def.func_name pp_args deps;
+
+  let pp_context = (pp_as_binders pp_str (pp_simple_coq_expr true)) in
+  pp "@[<v 2>Lemma type_%s%a %a :@;" def.func_name pp_args deps pp_context func_annot.fa_context;
   begin
     let prefix = if used_functions = [] then "⊢ " else "" in
     let pp_impl ff def =
@@ -1241,16 +1269,37 @@ let pp_proof : Coq_path.t -> func_def -> import list -> string list
         | Some(FDef(def)) when is_inlined def -> Some(def)
         | _                                   -> None
       in
+      (* get the list of instantiations for this function's context parameters *)
+      let context_instantiations : coq_expr list =
+        (* if this is a recursive mention of this function: just replicate all the parameters directly *)
+        if f = def.func_name
+        then List.map (fun (name, _) -> Coq_ident(name)) func_annot.fa_context
+        else
+        (* else, lookup by their identifiers in our environment *)
+        match List.assoc_opt f ast.functions with
+        | Some(def_or_decl) ->
+            let context_items = get_context_items def_or_decl in
+            let lookup name = List.assoc_opt name func_annot.fa_instantiations in
+            let instantiations = List.map lookup context_items in
+            (match list_option_lift instantiations with
+            | None -> Panic.panic_no_pos "Context instantiation unsuccessful for function [%s]." def.func_name
+            | Some(insts) -> insts)
+        | None -> []
+      in
       pp "global_%s ◁ᵥ global_%s @@ " f f;
       begin
         match inlined_def with
         | Some(def) -> pp "inline_function_ptr %a" pp_impl def
-        | None      -> pp "function_ptr type_of_%s" f
+        | None      ->
+            if context_instantiations = []
+              then pp "function_ptr type_of_%s" f
+              else pp "function_ptr (type_of_%s %a)" f (pp_sep " " (pp_simple_coq_expr true)) context_instantiations
       end;
       pp " -∗@;"
     in
     List.iter pp_dep used_functions;
-    pp "%styped_function %a type_of_%s.@]@;" prefix pp_impl def def.func_name
+    let (context_names, context_tys) = List.split func_annot.fa_context in
+    pp "%styped_function %a (type_of_%s %a).@]@;" prefix pp_impl def def.func_name (pp_sep " " pp_str) context_names
   end;
 
   (* We have a manual proof. *)

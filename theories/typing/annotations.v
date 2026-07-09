@@ -18,7 +18,7 @@ Inductive learn_annot : Set :=
 Inductive learn_alignment_annot : Set :=
   LearnAlignmentAnnot.
 
-Inductive LockAnnot : Set := LockA | UnlockA.
+Inductive LockAnnot : Set := UnlockA.
 
 Inductive reduce_annot : Set :=
   ReduceAnnot.

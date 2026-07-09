@@ -40,12 +40,12 @@ Section own.
     iApply loc_in_bounds_shorten; last done. by rewrite /val_of_loc.
   Qed.
 
-  Lemma frac_ptr_mono A ty1 ty2 l β β' p p' T:
-    (p ◁ₗ{own_state_min β β'} ty1 -∗ ∃ x, ⌜p = p' x⌝ ∗ p ◁ₗ{own_state_min β β'} (ty2 x) ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} p @ frac_ptr β' ty1) (λ x : A, l ◁ₗ{β} (p' x) @ frac_ptr β' (ty2 x)) T.
+  Lemma frac_ptr_mono A M ty1 ty2 l β β' p p' T:
+    (p ◁ₗ{own_state_min β β'} ty1 -∗ ‖M‖ ∃ x, ⌜p = p' x⌝ ∗ p ◁ₗ{own_state_min β β'} (ty2 x) ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} p @ frac_ptr β' ty1) M (λ x : A, l ◁ₗ{β} (p' x) @ frac_ptr β' (ty2 x)) T.
   Proof.
-    iIntros "HT [% [? Hl]]". iDestruct ("HT" with "Hl") as (? ->) "[??]".
-    iExists _. by iFrame.
+    iIntros "HT [% [? Hl]]". iMod ("HT" with "Hl") as (? ->) "[??]".
+    iModIntro. by iFrame.
   Qed.
   Definition frac_ptr_mono_inst := [instance frac_ptr_mono].
   Global Existing Instance frac_ptr_mono_inst.
@@ -80,31 +80,31 @@ Section own.
     iSplit => //.
   Qed.
 
-  Lemma simplify_frac_ptr (v : val) (p : loc) ty β T:
-    (⌜v = p⌝ -∗ p ◁ₗ{β} ty -∗ T)
-    ⊢ simplify_hyp (v◁ᵥ p @ frac_ptr β ty) T.
+  Lemma simplify_frac_ptr (v : val) (p : loc) ty β M T:
+    (⌜v = p⌝ -∗ p ◁ₗ{β} ty -∗ ‖M‖ T)
+    ⊢ simplify_hyp (v◁ᵥ p @ frac_ptr β ty) M T.
   Proof. iIntros "HT Hl". iDestruct "Hl" as (->) "Hl". by iApply "HT". Qed.
   Definition simplify_frac_ptr_inst := [instance simplify_frac_ptr with 0%N].
   Global Existing Instance simplify_frac_ptr_inst.
 
-  Lemma simplify_goal_frac_ptr_val ty (v : val) β (p : loc) T:
+  Lemma simplify_goal_frac_ptr_val ty (v : val) β (p : loc) M T:
     ⌜v = p⌝ ∗ p ◁ₗ{β} ty ∗ T
-    ⊢ simplify_goal (v ◁ᵥ p @ frac_ptr β ty) T.
-  Proof. by iIntros "[-> [$ $]]". Qed.
+    ⊢ simplify_goal M (v ◁ᵥ p @ frac_ptr β ty) T.
+  Proof. by iIntros "[-> [$ $]] !>". Qed.
   Definition simplify_goal_frac_ptr_val_inst := [instance simplify_goal_frac_ptr_val with 0%N].
   Global Existing Instance simplify_goal_frac_ptr_val_inst.
 
-  Lemma simplify_goal_frac_ptr_val_unrefined ty (v : val) β T:
+  Lemma simplify_goal_frac_ptr_val_unrefined ty (v : val) β M T:
     (∃ p : loc, ⌜v = p⌝ ∗ p ◁ₗ{β} ty ∗ T)
-    ⊢ simplify_goal (v ◁ᵥ frac_ptr β ty) T.
-  Proof. iIntros "[% [-> [? $]]]". iExists _. by iSplit. Qed.
+    ⊢ simplify_goal M (v ◁ᵥ frac_ptr β ty) T.
+  Proof. iIntros "[% [-> [? $]]] !>". iExists _. by iSplit. Qed.
   Definition simplify_goal_frac_ptr_val_unrefined_inst :=
     [instance simplify_goal_frac_ptr_val_unrefined with 0%N].
   Global Existing Instance simplify_goal_frac_ptr_val_unrefined_inst.
 
-  Lemma simplify_frac_ptr_place_shr_to_own l p1 p2 β T:
-    (⌜p1 = p2⌝ -∗ l ◁ₗ{β} p1 @ frac_ptr Own (place p2) -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ{β} p1 @ frac_ptr Shr (place p2)) T.
+  Lemma simplify_frac_ptr_place_shr_to_own l p1 p2 β M T:
+    (⌜p1 = p2⌝ -∗ l ◁ₗ{β} p1 @ frac_ptr Own (place p2) -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ{β} p1 @ frac_ptr Shr (place p2)) M T.
   Proof. iIntros "HT (%&Hl&%)". subst. iApply "HT" => //. by iFrame. Qed.
   Definition simplify_frac_ptr_place_shr_to_own_inst :=
     [instance simplify_frac_ptr_place_shr_to_own with 50%N].
@@ -166,7 +166,7 @@ Section own.
     (l ◁ₗ{β} ty -∗ (loc_in_bounds l 0 ∗ True) ∧ T1)
     ⊢ typed_if PtrOp l (l ◁ₗ{β} ty) T1 T2.
   Proof.
-    iIntros "HT1 Hl".
+    iIntros "HT1 Hl !>".
     iDestruct ("HT1" with "Hl") as "[[#Hlib _] HT]".
     iDestruct (loc_in_bounds_has_alloc_id with "Hlib") as %[? H].
     iExists l. iSplit; first by rewrite val_to_of_loc.
@@ -180,7 +180,7 @@ Section own.
     (l ◁ₗ{β} ty -∗ (loc_in_bounds l 0 ∗ True) ∧ typed_stmt s fn ls R Q)
     ⊢ typed_assert PtrOp l (l ◁ₗ{β} ty) s fn ls R Q.
   Proof.
-    iIntros "HT1 Hl".
+    iIntros "HT1 Hl !>".
     iDestruct ("HT1" with "Hl") as "[[#Hlib _] HT]".
     iDestruct (loc_in_bounds_has_alloc_id with "Hlib") as %[? H].
     iExists l. iSplit; first by rewrite val_to_of_loc.
@@ -353,7 +353,7 @@ Section own.
   Lemma find_in_context_type_val_P_own_singleton (l : loc) T:
     (True ∗ T (l ◁ₗ place' l))
     ⊢ find_in_context (FindValP l) T.
-  Proof. rewrite /place'. iIntros "[_ HT]". iExists _. iFrame "HT" => //=. Qed.
+  Proof. rewrite /place'. iIntros "[_ HT]". iExists (_ ◁ₗ _)%I. iFrame "HT" => //=. Qed.
   Definition find_in_context_type_val_P_own_singleton_inst :=
     [instance find_in_context_type_val_P_own_singleton with FICSyntactic].
   Global Existing Instance find_in_context_type_val_P_own_singleton_inst | 30.
@@ -396,9 +396,9 @@ Section ptr.
     iApply loc_in_bounds_shorten; last done. by rewrite /val_of_loc.
   Qed.
 
-  Lemma simplify_ptr_hyp_place (p:loc) l n T:
-    (loc_in_bounds p n -∗ l ◁ₗ value PtrOp (val_of_loc p) -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ p @ ptr n) T.
+  Lemma simplify_ptr_hyp_place (p:loc) l n M T:
+    (loc_in_bounds p n -∗ l ◁ₗ value PtrOp (val_of_loc p) -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ p @ ptr n) M T.
   Proof.
     iIntros "HT [% [#? Hl]]". iApply "HT"; first done. unfold value; simpl_type.
     repeat iSplit => //. iPureIntro. by apply: mem_cast_id_loc.
@@ -406,20 +406,20 @@ Section ptr.
   Definition simplify_ptr_hyp_place_inst := [instance simplify_ptr_hyp_place with 0%N].
   Global Existing Instance simplify_ptr_hyp_place_inst.
 
-  Lemma simplify_ptr_goal_val (p:loc) l n T:
-    ⌜l = p⌝ ∗ loc_in_bounds l n ∗ T  ⊢ simplify_goal (p ◁ᵥ l @ ptr n) T.
-  Proof. by iIntros "[-> [$ $]]". Qed.
+  Lemma simplify_ptr_goal_val (p:loc) l n M T:
+    ⌜l = p⌝ ∗ loc_in_bounds l n ∗ T  ⊢ simplify_goal M (p ◁ᵥ l @ ptr n) T.
+  Proof. by iIntros "[-> [$ $]] !>". Qed.
   Definition simplify_ptr_goal_val_inst := [instance simplify_ptr_goal_val with 10%N].
   Global Existing Instance simplify_ptr_goal_val_inst.
 
-  Lemma subsume_own_ptr A p l1 l2 ty n T:
-    (l1 ◁ₗ ty -∗ ∃ x, ⌜l1 = l2 x⌝ ∗ loc_in_bounds l1 (n x) ∗ T x)
-    ⊢ subsume (p ◁ₗ l1 @ &own ty)%I (λ x : A, p ◁ₗ (l2 x) @ ptr (n x))%I T.
+  Lemma subsume_own_ptr A M p l1 l2 ty n T:
+    (l1 ◁ₗ ty -∗ ‖M‖ ∃ x, ⌜l1 = l2 x⌝ ∗ loc_in_bounds l1 (n x) ∗ T x)
+    ⊢ subsume (p ◁ₗ l1 @ &own ty)%I M (λ x : A, p ◁ₗ (l2 x) @ ptr (n x))%I T.
   Proof.
     iIntros "HT Hp".
     iDestruct (ty_aligned _ PtrOp MCNone with "Hp") as %?; [done|].
     iDestruct (ty_deref _ PtrOp MCNone with "Hp") as (v) "[Hp [-> Hl]]"; [done|].
-    iDestruct ("HT" with "Hl") as (? ->) "[#Hlib ?]". iExists _. by iFrame "∗Hlib".
+    iMod ("HT" with "Hl") as (? ->) "[#Hlib ?]". iModIntro. by iFrame "∗Hlib".
   Qed.
   Definition subsume_own_ptr_inst := [instance subsume_own_ptr].
   Global Existing Instance subsume_own_ptr_inst.
@@ -591,7 +591,7 @@ Section null.
     T2
     ⊢ typed_if PtrOp v (v ◁ᵥ null) T1 T2.
   Proof.
-    iIntros "HT2 ->". iExists NULL_loc.
+    iIntros "HT2 -> !>". iExists NULL_loc.
     rewrite val_to_of_loc bool_decide_false; last naive_solver. iFrame.
     iSplit; [done|]. by iApply wp_if_precond_null.
   Qed.
@@ -629,22 +629,22 @@ Section optionable.
   (*   - by etrans; first apply (eval_bin_op_null_null beq); destruct beq => //. *)
   (* Admitted. *)
 
-  Lemma subsume_optional_place_val_null A ty l β b ty' T:
-    (l ◁ₗ{β} ty' -∗ ∃ x, ⌜b x⌝ ∗ l ◁ᵥ (ty x) ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} ty') (λ x : A, l ◁ᵥ (b x) @ optional (ty x) null) T.
+  Lemma subsume_optional_place_val_null A M ty l β b ty' T:
+    (l ◁ₗ{β} ty' -∗ ‖M‖∃ x, ⌜b x⌝ ∗ l ◁ᵥ (ty x) ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} ty') M (λ x : A, l ◁ᵥ (b x) @ optional (ty x) null) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (??) "[Hl ?]".
-    iExists _. iFrame. unfold optional; simpl_type. iLeft. by iFrame.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (??) "[Hl ?]".
+    iModIntro. iFrame. unfold optional; simpl_type. iLeft. by iFrame.
   Qed.
   Definition subsume_optional_place_val_null_inst := [instance subsume_optional_place_val_null].
   Global Existing Instance subsume_optional_place_val_null_inst | 20.
 
-  Lemma subsume_optionalO_place_val_null B A (ty : B → A → type) l β b ty' T:
-    (l ◁ₗ{β} ty' -∗ ∃ y x, ⌜b y = Some x⌝ ∗ l ◁ᵥ ty y x ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} ty') (λ y, l ◁ᵥ (b y) @ optionalO (ty y) null) T.
+  Lemma subsume_optionalO_place_val_null B A M (ty : B → A → type) l β b ty' T:
+    (l ◁ₗ{β} ty' -∗ ‖M‖ ∃ y x, ⌜b y = Some x⌝ ∗ l ◁ᵥ ty y x ∗ T y)
+    ⊢ subsume (l ◁ₗ{β} ty') M (λ y, l ◁ᵥ (b y) @ optionalO (ty y) null) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (?? Heq) "[? ?]".
-    iExists _. iFrame. rewrite Heq. unfold optionalO; simpl_type. done.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?? Heq) "[? ?]".
+    iModIntro. iFrame. rewrite Heq. unfold optionalO; simpl_type. done.
   Qed.
   Definition subsume_optionalO_place_val_null_inst := [instance subsume_optionalO_place_val_null].
   Global Existing Instance subsume_optionalO_place_val_null_inst | 20.

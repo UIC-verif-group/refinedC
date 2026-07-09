@@ -48,7 +48,10 @@ Section lithium.
   Definition trace {A} : A → iProp Σ → iProp Σ :=
     @li_trace Σ A.
 
-  Definition subsume {A} : iProp Σ → (A → iProp Σ) → (A → iProp Σ) → iProp Σ :=
+  Definition modal : limodal Σ → iProp Σ → iProp Σ :=
+    @li_modal Σ.
+
+  Definition subsume {A} : iProp Σ → limodal Σ → (A → iProp Σ) → (A → iProp Σ) → iProp Σ :=
     subsume.
   (* TODO: Should we also have a syntax for subsume list? *)
 
@@ -126,11 +129,13 @@ Notation "'accu'" := (li.accu) (in custom lithium at level 0) : lithium_scope.
 Notation "'trace' x" := (li.trace x) (in custom lithium at level 0, x constr,
                            format "'trace'  '[' x ']'") : lithium_scope.
 
+Notation "'‖' x '‖' P" := (li.modal x%_LM P) (in custom lithium at level 100, x constr, P at level 100,
+                           format "‖ x ‖  P") : lithium_scope.
 (* TODO: We cannot use :> here due to
 https://github.com/coq/coq/pull/16992/. Is there a good alternative
 syntax to use? *)
-Notation "x ':>>' y" := (li.subsume x y) (in custom lithium at level 0, x constr, y constr,
-                           format "'[' x ']'  ':>>'  '[' y ']'") : lithium_scope.
+Notation "x ':‖' M '‖>' y" := (li.subsume x M%_LM y) (in custom lithium at level 0, x constr, M constr, y constr,
+                           format "'[' x ']'  ':‖' M '‖>'  '[' y ']'") : lithium_scope.
 
 Notation "'return' x" := (li.ret x) (in custom lithium at level 0, x constr,
                            format "'return'  '[' x ']'") : lithium_scope.
@@ -194,7 +199,7 @@ Notation "'pattern:' x .. y , P ; G" :=
 Declare Reduction liFromSyntax_eval :=
   cbv [ li.exhale li.inhale li.all li.exist li.done li.false li.and li.and_map
         li.find_in_context li.case_if li.case_destruct li.drop_spatial li.tactic
-        li.accu li.trace li.subsume li.ret li.iterate
+        li.accu li.trace li.modal li.subsume li.ret li.iterate
         li.bind0 li.bind1 li.bind2 li.bind3 li.bind4 li.bind5 ].
 
 Ltac liFromSyntaxTerm c :=
@@ -243,8 +248,9 @@ Ltac liToSyntax :=
   change (li_tactic ?t) with (li.bind1 (li.tactic t));
   change (@accu ?Σ) with (li.bind1 (@li.accu Σ));
   change (@li_trace ?Σ ?A ?t) with (li.bind0 (@li.trace Σ A t));
+  change (@li_modal ?Σ ?M) with (@li.modal Σ M);
   (* TODO: check if the unfold marker for b works *)
-  change (subsume ?a ?b) with (li.bind1 (li.subsume (liToSyntax_UNFOLD_MARKER a) (liToSyntax_UNFOLD_MARKER b)));
+  change (subsume ?a ?M ?b) with (li.bind1 (li.subsume (liToSyntax_UNFOLD_MARKER a) M (liToSyntax_UNFOLD_MARKER b)));
   (* Try to at least unfold some spurious conversions. *)
   repeat (first [
               progress change (liToSyntax_UNFOLD_MARKER (li.bind0 (@li.exhale ?Σ ?a) ?b))
@@ -307,19 +313,26 @@ Ltac goal_to_li :=
 *)
 
 (** * Lemmas for working with [li.iterate] *)
+Lemma iterate_elim0_mod {Σ A} INV M (l : list A) F G:
+  ⊢@{iProp Σ} [{ iterate: l {{ x T, return F x T }}; return G }] -∗
+  INV 0%nat -∗
+  □ (∀ i x T, ⌜l !! i = Some x⌝ -∗ INV i -∗ F x T -∗ ‖M‖ INV (S i) ∗ T) -∗
+  ‖M‖ INV (length l) ∗ G.
+Proof.
+  liFromSyntax.
+  iIntros "Hiter Hinv #HF".
+  iInduction l as [|? l] "IH" forall (INV) => /=. { iModIntro. iFrame. }
+  iMod ("HF" $! 0%nat with "[//] Hinv Hiter") as "[??]".
+  iDestruct ("IH" $! (λ i, INV (S i)) with "[] [$] [$]") as "$".
+  iIntros "!>" (????) "??". iApply ("HF" $! (S _) with "[//] [$] [$]").
+Qed.
+
 Lemma iterate_elim0 {Σ A} INV (l : list A) F G:
   ⊢@{iProp Σ} [{ iterate: l {{ x T, return F x T }}; return G }] -∗
   INV 0%nat -∗
   □ (∀ i x T, ⌜l !! i = Some x⌝ -∗ INV i -∗ F x T -∗ INV (S i) ∗ T) -∗
   INV (length l) ∗ G.
-Proof.
-  liFromSyntax.
-  iIntros "Hiter Hinv #HF".
-  iInduction l as [|? l] "IH" forall (INV) => /=. { iFrame. }
-  iDestruct ("HF" $! 0%nat with "[//] Hinv Hiter") as "[??]".
-  iDestruct ("IH" $! (λ i, INV (S i)) with "[] [$] [$]") as "$".
-  iIntros "!>" (????) "??". iApply ("HF" $! (S _) with "[//] [$] [$]").
-Qed.
+Proof. have := (iterate_elim0_mod INV (-) l F G). by rewrite lm_id_eq. Qed.
 
 Lemma iterate_elim1 {Σ A B} INV (l : list A) F G (a : B) :
   ⊢@{iProp Σ} [{ x ← iterate: l with a {{ x T a, return F x T a }}; return G x }] -∗
@@ -376,7 +389,7 @@ Section test.
     change (get_tuple) with (li.bind1 (get_tuple)).
 
   Lemma ex1_1 :
-    ⊢ get_tuple (λ '(x1, x2, x3), ⌜x1 = 0⌝ ∗ subsume False (λ x : unit, False) (λ _, True)).
+    ⊢ get_tuple (λ '(x1, x2, x3), ⌜x1 = 0⌝ ∗ subsume False lm_id (λ x : unit, False) (λ _, True)).
   Proof.
     iStartProof.
     (* Important: '(...) syntax should be preserved *)
@@ -387,7 +400,11 @@ Section test.
 
   (* TODO: investigate why the () around False is necessary. *)
   Lemma ex1_2 :
-    ⊢ [{ '(x1, _, _) ← {get_tuple}; exhale ⌜x1 = 0⌝; _ ← (False) :>> λ _ : (), [{ false }]; done }].
+   ⊢  [{ '(x1, _, _) ← {get_tuple};
+     exhale ⌜x1 = 0⌝;
+     _ ← (False) :‖-‖> λ _ : (), [{ false }];
+     done
+  }].
   Proof.
     iStartProof.
     liFromSyntax.
@@ -401,7 +418,7 @@ Section test.
        get_tuple (λ '(x1, x2, x3), □ ⌜x1 = 0⌝ ∗ (P ∧
          □ [∧ map] a↦'(b1, b2)∈{[1 := (1, 1)]}, ⌜a = b1⌝ ∗
          case_if (n' = 1) (case_destruct n' (λ n'' b,
-          ⌜b = b⌝ ∗ ⌜n'' = 0⌝ ∗ subsume True (λ x : unit, True) (λ _, True ∗ True ∗ True ∗ True ∗ True ∗ True))) False))))).
+          ⌜b = b⌝ ∗ ⌜n'' = 0⌝ ∗ subsume True (-) (λ x : unit, True) (λ _, True ∗ True ∗ True ∗ True ∗ True ∗ True))) False))))).
   Proof.
     iStartProof.
     liToSyntax.

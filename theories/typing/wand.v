@@ -19,35 +19,35 @@ Section wand.
   Solve Obligations with try done.
   Next Obligation. by iIntros (?????) "?". Qed.
 
-  Lemma subsume_wand B l P1 (P2 : B → A → iProp Σ) ty1 ty2 T:
+  Lemma subsume_wand M B l P1 (P2 : B → A → iProp Σ) ty1 ty2 T:
     (* The trick is that we prove the wand at the very end so it can
     use all leftover resources. This only works if there is at most
     one wand per block (but this is enough for iterating over linked
     lists). *)
     (∃ z, T z ∗ (∀ x, P2 z x -∗ ∃ y, P1 y ∗ (l ◁ₗ ty1 y -∗ l ◁ₗ ty2 z x ∗ True)))
-    ⊢ subsume (l ◁ₗ wand_ex P1 ty1) (λ z : B, l ◁ₗ wand_ex (P2 z) (ty2 z)) T.
+    ⊢ subsume (l ◁ₗ wand_ex P1 ty1) M (λ z : B, l ◁ₗ wand_ex (P2 z) (ty2 z)) T.
   Proof.
-    iIntros "(%&?&Hwand) Hwand2". iExists _. iFrame.
+    iIntros "(%&?&Hwand) Hwand2 !>". iFrame.
     iIntros (x) "HP2". iDestruct ("Hwand" with "HP2") as (y) "[HP1 Hty]".
     iDestruct ("Hwand2" with "HP1") as "Hty1". iDestruct ("Hty" with "Hty1") as "[$ _]".
   Qed.
   Definition subsume_wand_inst := [instance subsume_wand].
   Global Existing Instance subsume_wand_inst.
 
-  Lemma simplify_hyp_resolve_wand l (P : A → _) ty T:
-    (∃ x, P x ∗ (l ◁ₗ ty x -∗ T))
-    ⊢ simplify_hyp (l ◁ₗ wand_ex P ty) T.
+  Lemma simplify_hyp_resolve_wand l (P : A → _) ty M T:
+    (∃ x, P x ∗ (l ◁ₗ ty x -∗ ‖M‖ T))
+    ⊢ simplify_hyp (l ◁ₗ wand_ex P ty) M T.
   Proof. iDestruct 1 as (x) "[HP HT]". iIntros "Hwand". iApply "HT". by iApply "Hwand". Qed.
   (* must be before [simplify_goal_place_refine_r] *)
   Definition simplify_hyp_resolve_wand_inst := [instance simplify_hyp_resolve_wand with 9%N].
   Global Existing Instance simplify_hyp_resolve_wand_inst.
 
-  Lemma simplify_goal_wand l P ty T:
-    simplify_goal (l ◁ₗ wand_ex P ty) T :-
+  Lemma simplify_goal_wand l P ty M T:
+    simplify_goal M (l ◁ₗ wand_ex P ty) T :-
     and:
     | drop_spatial; ∀ x, inhale P x; exhale l ◁ₗ ty x; done
     | return T.
-  Proof. iIntros "[#Hwand $]". iIntros (?) "?". iDestruct ("Hwand" with "[$]") as "[$ _]". Qed.
+  Proof. iIntros "[#Hwand $] !>". iIntros (?) "?". iDestruct ("Hwand" with "[$]") as "[$ _]". Qed.
   Definition simplify_goal_wand_inst := [instance simplify_goal_wand with 50%N].
   Global Existing Instance simplify_goal_wand_inst | 50.
 
@@ -91,24 +91,24 @@ Section wand_val.
     by iDestruct "Hly" as %->.
   Qed.
 
-  Lemma subsume_wand_val B v ly1 ly2 P1 (P2 : B → A → iProp Σ) ty1 ty2 T:
+  Lemma subsume_wand_val M B v ly1 ly2 P1 (P2 : B → A → iProp Σ) ty1 ty2 T:
     (* The trick is that we prove the wand at the very end so it can
     use all leftover resources. This only works if there is at most
     one wand per block (but this is enough for iterating over linked
     lists). *)
     (∃ z, ⌜ly1 = ly2 z⌝ ∗ T z ∗ (∀ x, P2 z x -∗ ∃ y, P1 y ∗ (v ◁ᵥ ty1 y -∗ v ◁ᵥ ty2 z x ∗ True)))
-    ⊢ subsume (v ◁ᵥ wand_val_ex ly1 P1 ty1) (λ z : B, v ◁ᵥ wand_val_ex (ly2 z) (P2 z) (ty2 z)) T.
+    ⊢ subsume (v ◁ᵥ wand_val_ex ly1 P1 ty1) M (λ z : B, v ◁ᵥ wand_val_ex (ly2 z) (P2 z) (ty2 z)) T.
   Proof.
-    iIntros "(%&->&?&Hwand) (%&Hty1)". iExists _. iFrame. iSplit; [done|].
+    iIntros "(%&->&?&Hwand) (%&Hty1) !>". iFrame. iSplit; [done|].
     iIntros (x) "HP2". iDestruct ("Hwand" with "HP2") as (y) "[HP1 Hwand]".
     iDestruct ("Hty1" with "HP1") as "Hty1". iDestruct ("Hwand" with "Hty1") as "[$_]".
   Qed.
   Definition subsume_wand_val_inst := [instance subsume_wand_val].
   Global Existing Instance subsume_wand_val_inst.
 
-  Lemma simplify_hyp_resolve_wand_val v ly P ty T:
-    (∃ x, P x ∗ (v ◁ᵥ ty x -∗ T))
-    ⊢ simplify_hyp (v ◁ᵥ wand_val_ex ly P ty) T.
+  Lemma simplify_hyp_resolve_wand_val v ly P ty M T:
+    (∃ x, P x ∗ (v ◁ᵥ ty x -∗ ‖M‖ T))
+    ⊢ simplify_hyp (v ◁ᵥ wand_val_ex ly P ty) M T.
   Proof.
     iDestruct 1 as (x) "[HP HT]". iIntros "[_ Hwand]".
     iApply "HT". by iApply "Hwand".
@@ -117,13 +117,13 @@ Section wand_val.
   Definition simplify_hyp_resolve_wand_val_inst := [instance simplify_hyp_resolve_wand_val with 9%N].
   Global Existing Instance simplify_hyp_resolve_wand_val_inst.
 
-  Lemma simplify_goal_wand_val v P ly ty T:
-    simplify_goal (v ◁ᵥ wand_val_ex ly P ty) T :-
+  Lemma simplify_goal_wand_val v P ly ty M T:
+    simplify_goal M (v ◁ᵥ wand_val_ex ly P ty) T :-
     and:
     | drop_spatial; ∀ x, inhale P x; exhale v ◁ᵥ ty x; done
     | exhale ⌜v `has_layout_val` ly⌝; return T.
   Proof.
-    iIntros "[#Hwand [% $]]". iSplit; [done|].
+    iIntros "[#Hwand [% $]] !>". iSplit; [done|].
     iIntros (?) "?". iDestruct ("Hwand" with "[$]") as "[$ _]".
   Qed.
   Definition simplify_goal_wand_val_inst := [instance simplify_goal_wand_val with 50%N].

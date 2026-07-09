@@ -17,7 +17,7 @@ typedef bool (*comp_fn)(void *, void *);
               "{∀ i y, (n ≤ i)%nat → ls.*2 !! i = Some y → ¬ R y x}")]]
 [[rc::ensures("own p : array<void*, {(fun x => (x.1 @ &own (ty x.2)) : type) <$> ls}>")]]
 [[rc::ensures("own px : ty<x>")]]
-[[rc::tactics("all: try by [revert select (∀ i j, _ → _ → ¬ R _ _); apply; [|apply list_lookup_fmap_Some; naive_solver]; solve_goal].")]]
+[[rc::tactics("all: try by [revert select (∀ i j, _ → _ → ¬ R _ _); apply; [|apply list_lookup_fmap_Some; eexists (_, _); naive_solver]; solve_goal].")]]
 [[rc::tactics("all: try by apply: binary_search_cond_1; [solve_goal|..]; solve_goal.")]]
 [[rc::tactics("all: try by apply: binary_search_cond_2; [solve_goal|..]; solve_goal.")]]
 size_t binary_search(comp_fn comp, void **xs, size_t n, void *x) {

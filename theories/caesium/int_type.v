@@ -51,6 +51,10 @@ Definition i32 := IntType 2 true.
 Definition u32 := IntType 2 false.
 Definition i64 := IntType 3 true.
 Definition u64 := IntType 3 false.
+(* TODO: We would like to enable the following to make it faster to match on
+this in a typeclass search, but currently SimplBoth relies on being
+able to unfold this. *)
+(* Global Typeclasses Opaque i8 u8 i16 u16 i32 u32 i64 u64. *)
 
 (* hardcoding 64bit pointers for now *)
 Definition bytes_per_addr_log : nat := 3%nat.
@@ -59,12 +63,13 @@ Definition bytes_per_addr : nat := (2 ^ bytes_per_addr_log)%nat.
 Definition void_ptr : layout := {| ly_size := bytes_per_addr; ly_align_log := bytes_per_addr_log |}.
 Notation "'void*'" := (void_ptr).
 
-Definition intptr_t  := IntType bytes_per_addr_log true.
-Definition uintptr_t := IntType bytes_per_addr_log false.
+Definition size_t  := IntType bytes_per_addr_log false.
+Definition ssize_t := IntType bytes_per_addr_log true.
+(* Global Typeclasses Opaque size_t ssize_t. *)
 
-Definition size_t  := uintptr_t.
-Definition ssize_t := intptr_t.
-Definition ptrdiff_t := intptr_t.
+Notation intptr_t := ssize_t (only parsing).
+Notation ptrdiff_t := ssize_t (only parsing).
+Notation uintptr_t := size_t (only parsing).
 
 Definition bool_layout : layout := {| ly_size := 1; ly_align_log := 0 |}.
 

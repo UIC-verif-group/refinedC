@@ -32,7 +32,6 @@ static inline void hyp_spin_lock(hyp_spinlock_t *lock);
 [[rc::args("p @ &frac<s, hyp_spinlock_t<id>>")]]
 [[rc::requires("[spinlock_token id []]")]]
 [[rc::ensures("frac s p : hyp_spinlock_t<id>")]]
-[[rc::annot_args("0 : 1 LockA")]]
 static inline void hyp_spin_unlock(hyp_spinlock_t *lock);
 
 #endif /* __ARM64_KVM_NVHE_SPINLOCK_H__ */

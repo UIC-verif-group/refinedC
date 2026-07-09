@@ -33,7 +33,7 @@ https://gitlab.mpi-sws.org/msammler/refinedc-tutorial
 
 ## Installing RefinedC
 
-RefinedC is known to compile with Coq 8.20.0, on 64-bits Linux machines. It
+RefinedC is known to compile with Coq 9.1.0, on 64-bits Linux machines. It
 also possibly works on MacOS. In any case, we strongly advise you to rely on
 [opam](https://opam.ocaml.org/doc/Install.html) to install dependencies.
 
@@ -49,7 +49,7 @@ Assuming an appropriate [opam](https://opam.ocaml.org/doc/Install.html) switch
 opam repo add coq-released "https://coq.inria.fr/opam/released"
 opam repo add iris-dev "https://gitlab.mpi-sws.org/iris/opam.git"
 opam update
-opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#6e3e8be7a3f75b1f1cb0704dca8ef3945be0e413"
+opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#f11e6b335a687c1b77539f7e5695607d09dfc3ea"
 opam pin add refinedc "git+https://gitlab.mpi-sws.org/iris/refinedc.git"
 ```
 
@@ -100,7 +100,7 @@ are not quite sure what to do, simply create a new directory under which all
 of you RefinedC will be placed. And then create the new switch in that folder.
 ```bash
 mkdir refinedc-projects
-opam switch create refinedc-projects ocaml-variants.4.14.0+options ocaml-option-flambda
+opam switch create refinedc-projects ocaml-variants.4.14.2+options ocaml-option-flambda
 ```
 You should then have an appropriate OCaml environment (with version 4.14.0) in
 the `refinedc-projects` directory (or whatever you named it). In the following
@@ -110,7 +110,7 @@ forget to move into it.
 cd refinedc-projects
 ```
 
-### Installing RefiendC and its dependencies
+### Installing RefinedC and its dependencies
 
 RefinedC requires Coq, Iris, as well as a number of OCaml dependencies. These
 dependencies can be made available to opam by running the following commands.
@@ -118,7 +118,7 @@ dependencies can be made available to opam by running the following commands.
 opam repo add coq-released "https://coq.inria.fr/opam/released"
 opam repo add iris-dev "https://gitlab.mpi-sws.org/iris/opam.git"
 opam update
-opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#d992a90affb95b4246df5f9cd7b720a4094d0f3d"
+opam pin add -n -y cerberus-lib "git+https://github.com/rems-project/cerberus.git#f11e6b335a687c1b77539f7e5695607d09dfc3ea"
 ```
 You can then finally install RefinedC with the following command, or rather
 decide to install it from a local clone to have access to various examples.

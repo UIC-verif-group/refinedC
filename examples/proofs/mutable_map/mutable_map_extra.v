@@ -66,19 +66,24 @@ Section defs.
   Global Instance simpl_both_slot_for_key_ref_length key n:
     SimplBoth (slot_for_key_ref key n < n)%nat (0 < n)%nat.
   Proof.
-    unfold SimplBoth, slot_for_key_ref. split.
+    constructor. unfold slot_for_key_ref. split.
     - destruct n; rewrite ?Zmod_0_r; lia.
     - move => ?. rewrite /slot_for_key_ref. have [|??]:= Z_mod_lt key n; lia.
   Qed.
 
   Local Instance simpl_both_list_find_Some A P x (l : list A) `{∀ x, Decision (P x)}:
-    SimplBothRel (=) (list_find P l) (Some x) (l !! x.1 = Some x.2 ∧ P x.2 ∧ ∀ y : A, y ∈ take x.1 l → ¬ P y).
-  Proof. unfold SimplBothRel. by rewrite list_find_Some'. Qed.
+    SimplBoth (list_find P l = Some x) (l !! x.1 = Some x.2 ∧ P x.2 ∧ ∀ y : A, y ∈ take x.1 l → ¬ P y).
+  Proof. constructor. by rewrite list_find_Some'. Qed.
+  Definition simpl_both_list_find_Some_sym A P x (l : list A) `{∀ x, Decision (P x)} :=
+    simpl_both_sym (=) (simpl_both_list_find_Some A P x l).
+  Local Existing Instance simpl_both_list_find_Some_sym.
 
   Local Instance simpl_both_list_find_None A P (l : list A) `{∀ x, Decision (P x)}:
-    SimplBothRel (=) (list_find P l) (None) (∀ y, y ∈ l → ¬ P y).
-  Proof. unfold SimplBothRel. by rewrite list_find_None Forall_forall. Qed.
-
+    SimplBoth (list_find P l = None) (∀ y, y ∈ l → ¬ P y).
+  Proof. constructor. by rewrite list_find_None Forall_forall. Qed.
+  Definition simpl_both_list_find_None_sym A P (l : list A) `{∀ x, Decision (P x)} :=
+    simpl_both_sym (=) (simpl_both_list_find_None A P l).
+  Local Existing Instance simpl_both_list_find_None_sym.
 
   (*** probe_ref_go lemmata *)
   (* used by automation *)
@@ -106,8 +111,11 @@ Section defs.
   Qed.
 
   Local Instance simpl_both_probe_ref_Some key x l:
-    SimplBothRel (=) (probe_ref key l) (Some x) (l !! x.1 = Some x.2 ∧ probe_ref_found key x.2 ∧ (x.1 < length l)%nat ∧ ∀ y, y ∈ rotate_take (slot_for_key_ref key (length l)) x.1 l → ¬ probe_ref_found key y).
-  Proof. unfold SimplBothRel. by rewrite probe_ref_lookup. Qed.
+    SimplBoth (probe_ref key l = Some x) (l !! x.1 = Some x.2 ∧ probe_ref_found key x.2 ∧ (x.1 < length l)%nat ∧ ∀ y, y ∈ rotate_take (slot_for_key_ref key (length l)) x.1 l → ¬ probe_ref_found key y).
+  Proof. constructor. by rewrite probe_ref_lookup. Qed.
+  Definition simpl_both_probe_ref_Some_sym key x l :=
+    simpl_both_sym (=) (simpl_both_probe_ref_Some key x l).
+  Local Existing Instance simpl_both_probe_ref_Some_sym.
 
   (* used by automation *)
   Lemma probe_ref_take_Some key n i items:
@@ -120,7 +128,7 @@ Section defs.
     rewrite rotate_take_add; naive_simpl; try naive_solver lia.
     apply dec_stable => Hlen. revert select (∀ y, y ∈ _ → _) => Hempty.
     move: (Hempty i). rewrite take_ge; last by naive_solve.
-    rewrite elem_of_rotate elem_of_list_lookup. naive_solve.
+    rewrite elem_of_rotate list_elem_of_lookup. naive_solve.
   Qed.
 
   Lemma probe_ref_Empty_inv_upd n key key' items ir' ir:
@@ -146,7 +154,7 @@ Section defs.
   Lemma probe_ref_find_entry key ty items :
     probe_ref_Empty_inv key items →
     Entry key ty ∈ items → ∃ i, probe_ref key items = Some (i, Entry key ty).
-  Proof. move => Hinv /elem_of_list_lookup[i ?]. eexists. by apply Hinv. Qed.
+  Proof. move => Hinv /list_elem_of_lookup[i ?]. eexists. by apply Hinv. Qed.
 
   (*** fsm_invariant *)
   (* used by automation *)
@@ -183,11 +191,11 @@ Section defs.
     opose proof* fsm_invariant_lookup as Hmp => //. rewrite -Hmp in Hf.
     destruct (item_ref_to_key ir') as [?|] eqn:Hkey'. 2: {
       destruct ir', ir => //; simpl in *; [|naive_solver..].
-      by rewrite list_insert_id // partial_alter_self_alt' // Hf Hmp.
+      by rewrite list_insert_id // partial_alter_id' // Hf Hmp.
     }
     split => key'; last by apply: probe_ref_Empty_inv_upd => //; destruct ir' => //=; simpl in *; by simplify_eq.
     move => ?. destruct (decide (key = key')) as [<-|?].
-    - rewrite lookup_partial_alter Hf.
+    - rewrite lookup_partial_alter_eq Hf.
       assert (probe_ref key (<[n:=ir']> items) = Some (n, ir')) as ->. 2: destruct ir'; naive_solver.
       naive_simpl. revert select (_ ∈ _). rewrite rotate_take_insert;[case_decide|..]; naive_solver lia.
     - rewrite lookup_partial_alter_ne // Hinv1. f_equiv => i. split; naive_simpl.
@@ -198,7 +206,7 @@ Section defs.
         case_decide;[|naive_solver lia].
       + move => ? /(list_elem_of_insert1 _ _ _ _)[?|?]; subst; destruct ir'; naive_solver.
       + move => Hx Hin' Hx'. apply: (Hx _ _ Hx'). apply: list_elem_of_insert2' => //.
-        { rewrite lookup_take // lookup_rotate_l//. }
+        { rewrite lookup_take_lt // lookup_rotate_l//. }
         move => ?. subst. destruct ir; [|naive_solver..].
         opose proof* (Hinv2 key' i) as Hi => //. move: Hi => /probe_ref_lookup[_ [_ [_ ]]]. by apply.
   Qed.
@@ -234,19 +242,22 @@ Section defs.
   Qed.
 
   Global Instance simpl_lookup_fsm_map_and mp key items n ir o `{!TCFastDone (fsm_invariant mp items)} `{!TCFastDone (probe_ref key items = Some (n, ir))}:
-      SimplBothRel (=) (mp !! key) o (item_ref_to_ty ir = o).
+      SimplBoth (mp !! key = o) (item_ref_to_ty ir = o).
   Proof. unfold TCFastDone in *. by rewrite (fsm_invariant_lookup _ items _ n ir (item_ref_to_ty ir)). Qed.
+  Definition simpl_lookup_fsm_map_and_sym mp key items n ir o `{!TCFastDone (fsm_invariant mp items)} `{!TCFastDone (probe_ref key items = Some (n, ir))} :=
+    simpl_both_sym (=) (simpl_lookup_fsm_map_and mp key items n ir o).
+  Global Existing Instance simpl_lookup_fsm_map_and_sym.
 
   Global Instance simpl_fsm_invariant_and mp1 mp2 items `{!IsEx mp1} `{!TCFastDone (fsm_invariant mp2 items)}:
     SimplAndUnsafe (fsm_invariant mp1 items) (mp1 = mp2) | 50.
-  Proof. unfold TCFastDone in *. by move => ->. Qed.
+  Proof. constructor. unfold TCFastDone in *. by move => ->. Qed.
 
   Global Instance simpl_and_fsm_invariant_alter key ty mp n items ir ir':
     TCFastDone (probe_ref key items = Some (n, ir)) →
     SimplAndUnsafe
       (fsm_invariant (alter (λ _, ty) key mp) (<[n:=ir']> items))
       (fsm_invariant mp items ∧ ir' = item_ref_set_ty ir ty).
-  Proof. rewrite /TCFastDone/SimplAndUnsafe => ? [??]. by apply: fsm_invariant_alter. Qed.
+  Proof. rewrite /TCFastDone => ?. constructor. move => [??]. by apply: fsm_invariant_alter. Qed.
 
 
   Definition fsm_copy_entries (items : list item_ref) (i : nat) : gmap Z type :=
@@ -260,13 +271,13 @@ Section defs.
   Proof.
     unfold fsm_copy_entries. move => [Hinv1 Hinv2] ->. apply map_eq => k. apply option_eq => ty.
     rewrite Hinv1 firstn_all -elem_of_list_to_map'; [| move => ?];
-      rewrite !elem_of_list_bind; setoid_rewrite elem_of_reverse. 2: {
-      move => [[|??|?]] [? Hin1] [[|??|?]] [? Hin2]; set_unfold => //. destruct_or!. simplify_eq.
+      rewrite !list_elem_of_bind; setoid_rewrite elem_of_reverse. 2: {
+      move => [[|??|?]] [? Hin1] [[|??|?]] [? Hin2]; set_unfold => //. simplify_eq.
       move: Hin1 Hin2 => /probe_ref_find_entry[//|??] /probe_ref_find_entry[//|??]. by simplify_eq.
     }
     split.
-    - move => [[|? ?|?]]; set_unfold => -[H1 ?]//. destruct_or!. simplify_eq. by apply: probe_ref_find_entry.
-    - move => [n /probe_ref_lookup]/=[/(elem_of_list_lookup_2 _ _ _)? ?]. eexists (Entry k ty). set_solver.
+    - move => [[|? ?|?]]; set_unfold => -[H1 ?]//. simplify_eq. by apply: probe_ref_find_entry.
+    - move => [n /probe_ref_lookup]/=[/(list_elem_of_lookup_2 _ _ _)? ?]. eexists (Entry k ty). set_solver.
   Qed.
 
 

@@ -135,7 +135,7 @@ Section generic_boolean.
       ⌜b⌝ ∗ typed_stmt s fn ls R Q)
     ⊢ typed_assert ot v (v ◁ᵥ b @ generic_boolean stn it) s fn ls R Q.
   Proof.
-    iIntros "[% [% ?]] (%n&%&%Hb)". destruct b; last by exfalso.
+    iIntros "[% [% ?]] (%n&%&%Hb) !>". destruct b; last by exfalso.
     destruct ot; destruct_and? => //; simplify_eq/=.
     - iExists true. iFrame. iPureIntro. split; [|done]. by apply val_to_bool_iff_val_to_Z.
     - iExists n. iFrame. iSplit; first done. iPureIntro.

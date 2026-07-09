@@ -282,6 +282,8 @@ let points_to classify expr =
           aux e
       | AilEgcc_statement _ ->
           Panic.panic loc "Not implemented GCC statement expr." (* TODO *)
+      | AilEinvalid _ ->
+          Panic.panic loc "Not implemented invalid expr." (* TODO *)
   in
   aux expr
 
@@ -422,6 +424,8 @@ let rec taint_expr points_to (AnnotatedExpression (_, _, loc, expr_)) =
         merge_pointsto [self e1; self e2]
     | AilEgcc_statement _ ->
         Panic.panic loc "Not implemented GCC statement expr." (* TODO *)
+    | AilEinvalid _ ->
+        Panic.panic loc "Not implemented invalid expr." (* TODO *)
 
 let taints_of_functions sigm =
   List.fold_left (fun acc (sym_decl, (_, _, decl)) ->
@@ -606,6 +610,8 @@ let warn_unseq taints_map expr =
           merge_status [aux e1; aux e2]
       | AilEgcc_statement _ ->
           Panic.panic loc "Not implemented GCC statement expr." (* TODO *)
+      | AilEinvalid _ ->
+          Panic.panic loc "Not implemented invalid expr." (* TODO *)
   in
   ignore (aux expr)
 
@@ -733,6 +739,8 @@ let warn_file (_, sigm) =
           end
       | AilEgcc_statement _ ->
           Panic.panic loc "Not implemented GCC statement expr." (* TODO *)
+      | AilEinvalid _ ->
+          Panic.panic loc "Not implemented invalid expr." (* TODO *)
   in
   let rec aux env stmt =
     let self = aux env in

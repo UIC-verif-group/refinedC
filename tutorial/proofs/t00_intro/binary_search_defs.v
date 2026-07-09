@@ -7,7 +7,7 @@ Lemma must_be_in_range_full A (l : list A) x: must_be_in_range l 0%nat (length l
 Proof. move => ? Hs. move: (Hs) => /(lookup_lt_Some _ _ _). naive_solver lia. Qed.
 
 Lemma must_be_in_range_not_in A (l : list A) s e x: must_be_in_range l s e x → (e ≤ s)%nat → x ∉ l.
-Proof. unfold must_be_in_range. move => ?? /(elem_of_list_lookup_1 _ _)[? Hin]. naive_solver lia. Qed.
+Proof. unfold must_be_in_range. move => ?? /(list_elem_of_lookup_1 _ _)[? Hin]. naive_solver lia. Qed.
 
 Lemma must_be_in_range_sorted_l {A} R (l : list A) x y s m e:
   StronglySorted R l → l !! m = Some y → ¬R y x → x ≠ y → must_be_in_range l s e x → must_be_in_range l s m x.

@@ -1,4 +1,4 @@
-From lithium Require Import bitblast.
+From stdpp.unstable Require Import bitblast.
 From lithium Require Import simpl_classes definitions.
 From caesium Require Import base int_type builtins_specs.
 
@@ -289,15 +289,16 @@ Ltac normalize_bitfield :=
 Definition normalize_bitfield {Σ} (bv : Z) (T : Z → iProp Σ) : iProp Σ := T bv.
 Global Typeclasses Opaque normalize_bitfield.
 
-Program Definition li_normalize_bitfield {Σ} bv norm :
+Lemma li_normalize_bitfield_tac {Σ} Δ M bv norm T :
   bv = norm →
-  LiTactic (normalize_bitfield (Σ:=Σ) bv) := λ H, {|
-    li_tactic_P T := T norm;
-|}.
-Next Obligation. move => ??? -> ?. unfold normalize_bitfield. iIntros "$". Qed.
-
-Global Hint Extern 10 (LiTactic (normalize_bitfield _)) =>
-  eapply li_normalize_bitfield; normalize_bitfield : typeclass_instances.
+  LiEntailsShelved Δ M (T norm) →
+  LiEntails Δ M (li_tactic (normalize_bitfield (Σ:=Σ) bv) T).
+Proof.
+  rewrite /li_tactic/normalize_bitfield.
+  move => ->. done.
+Qed.
+Global Hint Extern 10 (LiEntails _ _ (li_tactic (normalize_bitfield _) _)) =>
+  eapply li_normalize_bitfield_tac; [normalize_bitfield|shelve] : li_entails.
 
 (* enable using normalize_bitfield in function call specifications
 where one cannot use tactic_hint *)
@@ -338,11 +339,14 @@ Qed.
 (* Simplify singleton data list =/≠ 0 *)
 
 Global Instance bf_cons_singleton_z a k x `{!CanSolve (0 ≤ a)} :
-  SimplBothRel (=) 0 (bf_cons a k x bf_nil) (x = 0).
+  SimplBoth (0 = bf_cons a k x bf_nil) (x = 0).
 Proof.
   have := (bf_cons_singleton_z_iff a k x).
   split; naive_solver.
 Qed.
+Definition bf_cons_singleton_z_sym a k x `{!CanSolve (0 ≤ a)} :=
+  simpl_both_sym (=) (bf_cons_singleton_z a k x).
+Global Existing Instance bf_cons_singleton_z_sym | 5.
 
 Global Instance bf_cons_singleton_nz_1 a k x `{!CanSolve (0 ≤ a)} :
   SimplBoth (bf_cons a k x bf_nil ≠ 0) (x ≠ 0).
@@ -362,7 +366,7 @@ Qed.
 Global Instance bf_cons_eq a k x1 l1 x2 l2 :
   SimplAndUnsafe (bf_cons a k x1 l1 = bf_cons a k x2 l2) (x1 = x2 ∧ l1 = l2).
 Proof.
-  unfold CanSolve, SimplAndUnsafe in *.
+  constructor. unfold CanSolve in *.
   naive_solver.
 Qed.
 

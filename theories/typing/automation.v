@@ -129,60 +129,60 @@ End automation.
 
 Ltac liRIntroduceLetInGoal :=
   lazymatch goal with
-  | |- @envs_entails ?PROP ?Δ ?P =>
+  | |- @envs_entails ?PROP ?Δ (‖?M‖ ?P) =>
     lazymatch P with
     | @typed_val_expr ?Σ ?tG ?e ?T =>
-      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (@typed_val_expr Σ tG e H)))
+      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (‖M‖ (@typed_val_expr Σ tG e H))))
     | @typed_write ?Σ ?tG ?b ?e ?ot ?v ?ty ?T =>
-      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (@typed_write Σ tG b e ot v ty H)))
+      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (‖M‖ (@typed_write Σ tG b e ot v ty H))))
     | @typed_place ?Σ ?tG ?P ?l1 ?β1 ?ty1 ?T =>
-      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (@typed_place Σ tG P l1 β1 ty1 H)))
+      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (‖M‖ (@typed_place Σ tG P l1 β1 ty1 H))))
     | @typed_bin_op ?Σ ?tG ?v1 ?P1 ?v2 ?P2 ?op ?ot1 ?ot2 ?T =>
-      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (@typed_bin_op Σ tG v1 P1 v2 P2 op ot1 ot2 H)))
+      li_let_bind T (fun H => constr:(@envs_entails PROP Δ (‖M‖ (@typed_bin_op Σ tG v1 P1 v2 P2 op ot1 ot2 H))))
     end
   end.
 
 Ltac liRStmt :=
   lazymatch goal with
-  | |- envs_entails ?Δ (typed_stmt ?s ?fn ?ls ?fr ?Q) =>
+  | |- envs_entails ?Δ (‖?M‖ typed_stmt ?s ?fn ?ls ?fr ?Q) =>
     lazymatch s with
     | LocInfo ?info ?s2 =>
       update_loc_info (Some info);
-      change_no_check (envs_entails Δ (typed_stmt s2 fn ls fr Q))
+      change_no_check (envs_entails Δ (‖M‖ typed_stmt s2 fn ls fr Q))
     | _ => update_loc_info (None : option location_info)
     end
   end;
   lazymatch goal with
-  | |- envs_entails ?Δ (typed_stmt ?s ?fn ?ls ?fr ?Q) =>
+  | |- envs_entails ?Δ (‖_‖ typed_stmt ?s ?fn ?ls ?fr ?Q) =>
     lazymatch s with
     | subst_stmt ?xs ?s =>
       let s' := W.of_stmt s in
       change (subst_stmt xs s) with (subst_stmt xs (W.to_stmt s'));
-      refine (tac_fast_apply (tac_simpl_subst _ _ _ _ _ _) _); simpl; unfold W.to_stmt, W.to_expr
+      refine (tac_li_apply (tac_simpl_subst _ _ _ _ _ _) _); simpl; unfold W.to_stmt, W.to_expr
     | _ =>
       let s' := W.of_stmt s in
       lazymatch s' with
-      | W.Assign _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_assign _ _ _ _ _ _ _ _ _) _)
-      | W.Return _ => notypeclasses refine (tac_fast_apply (type_return _ _ _ _ _) _)
-      | W.IfS _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_if _ _ _ _ _ _ _ _ _) _)
-      | W.Switch _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_switch _ _ _ _ _ _ _ _ _) _)
-      | W.Assert _ _ _ => notypeclasses refine (tac_fast_apply (type_assert _ _ _ _ _ _ _) _)
+      | W.Assign _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_assign _ _ _ _ _ _ _ _ _) _)
+      | W.Return _ => notypeclasses refine (tac_li_apply (type_return _ _ _ _ _) _)
+      | W.IfS _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_if _ _ _ _ _ _ _ _ _) _)
+      | W.Switch _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_switch _ _ _ _ _ _ _ _ _) _)
+      | W.Assert _ _ _ => notypeclasses refine (tac_li_apply (type_assert _ _ _ _ _ _ _) _)
       | W.Goto ?bid => first [
-         notypeclasses refine (tac_fast_apply (type_goto_precond _ _ _ _ _ _) _); progress liFindHyp FICSyntactic
+         notypeclasses refine (tac_li_apply (type_goto_precond _ _ _ _ _ _) _); progress liFindHyp FICSyntactic
        | lazymatch goal with
          | H : IPROP_HINT (BLOCK_PRECOND bid) (λ _, ?P) |- _ =>
-           notypeclasses refine (tac_fast_apply (tac_typed_single_block_rec P _ _ _ _ _ _ _) _);[unfold_code_marker_and_compute_map_lookup|]
+           notypeclasses refine (tac_li_apply (tac_typed_single_block_rec P _ _ _ _ _ _ _) _);[unfold_code_marker_and_compute_map_lookup|]
          end
-       | notypeclasses refine (tac_fast_apply (type_goto _ _ _ _ _ _ _) _); [unfold_code_marker_and_compute_map_lookup|]
+       | notypeclasses refine (tac_li_apply (type_goto _ _ _ _ _ _ _) _); [unfold_code_marker_and_compute_map_lookup|]
                      ]
-      | W.ExprS _ _ => notypeclasses refine (tac_fast_apply (type_exprs _ _ _ _ _ _) _)
-      | W.SkipS _ => notypeclasses refine (tac_fast_apply (type_skips' _ _ _ _ _) _)
+      | W.ExprS _ _ => notypeclasses refine (tac_li_apply (type_exprs _ _ _ _ _ _) _)
+      | W.SkipS _ => notypeclasses refine (tac_li_apply (type_skips' _ _ _ _ _) _)
       | W.AnnotStmt _ (AssertAnnot ?id) _ =>
           lazymatch goal with
           | H : IPROP_HINT (ASSERT_COND id) ?P |- _ =>
-              notypeclasses refine (tac_fast_apply (type_annot_stmt_assert P _ _ _ _ _ _) _)
+              notypeclasses refine (tac_li_apply (type_annot_stmt_assert P _ _ _ _ _ _) _)
           end
-      | W.AnnotStmt _ ?a _ => notypeclasses refine (tac_fast_apply (type_annot_stmt _ _ _ _ _ _ _) _)
+      | W.AnnotStmt _ ?a _ => notypeclasses refine (tac_li_apply (type_annot_stmt _ _ _ _ _ _ _) _)
       | _ => fail "do_stmt: unknown stmt" s
       end
     end
@@ -190,15 +190,15 @@ Ltac liRStmt :=
 
 Ltac liRIntroduceTypedStmt :=
   lazymatch goal with
-  | |- @envs_entails ?PROP ?Δ (introduce_typed_stmt ?fn ?ls ?R) =>
+  | |- @envs_entails ?PROP ?Δ (‖_‖ introduce_typed_stmt ?fn ?ls ?R) =>
     iEval (rewrite /introduce_typed_stmt !fmap_insert fmap_empty; simpl_subst);
       lazymatch goal with
-      | |- @envs_entails ?PROP ?Δ (@typed_stmt ?Σ ?tG ?s ?fn ?ls ?R ?Q) =>
+      | |- @envs_entails ?PROP ?Δ (‖?M‖ @typed_stmt ?Σ ?tG ?s ?fn ?ls ?R ?Q) =>
         let HQ := fresh "Q" in
         let HR := fresh "R" in
         pose (HQ := (CODE_MARKER Q));
         pose (HR := (RETURN_MARKER R));
-        change_no_check (@envs_entails PROP Δ (@typed_stmt Σ tG s fn ls HR HQ));
+        change_no_check (@envs_entails PROP Δ (‖M‖ @typed_stmt Σ tG s fn ls HR HQ));
         iEval (simpl) (* To simplify f_init *)
       end
   end.
@@ -206,51 +206,51 @@ Ltac liRIntroduceTypedStmt :=
 Ltac liRPopLocationInfo :=
   lazymatch goal with
   (* TODO: don't hardcode this for two arguments *)
-  | |- envs_entails ?Δ (pop_location_info ?info ?T ?a1 ?a2) =>
+  | |- envs_entails ?Δ (‖?M‖ pop_location_info ?info ?T ?a1 ?a2) =>
     update_loc_info [info; info];
-    change_no_check (envs_entails Δ (T a1 a2))
+    change_no_check (envs_entails Δ (‖M‖ T a1 a2))
   end.
 
 Ltac liRExpr :=
   lazymatch goal with
-  | |- envs_entails ?Δ (typed_val_expr ?e ?T) =>
+  | |- envs_entails ?Δ (‖?M‖ typed_val_expr ?e ?T) =>
     lazymatch e with
     | LocInfo ?info ?e2 =>
       update_loc_info [info];
-      change_no_check (envs_entails Δ (typed_val_expr e2 (pop_location_info info T)))
+      change_no_check (envs_entails Δ (‖M‖ typed_val_expr e2 (pop_location_info info T)))
     | _ => idtac
     end
   end;
   lazymatch goal with
-  | |- envs_entails ?Δ (typed_val_expr ?e ?T) =>
+  | |- envs_entails ?Δ (‖_‖ typed_val_expr ?e ?T) =>
     let e' := W.of_expr e in
     lazymatch e' with
-    | W.Val _ => notypeclasses refine (tac_fast_apply (type_val _ _) _)
-    | W.Loc _ => notypeclasses refine (tac_fast_apply (type_val _ _) _)
-    | W.Use _ _ _ _ => notypeclasses refine (tac_fast_apply (type_use _ _ _ _ _) _)
-    | W.AddrOf _ => notypeclasses refine (tac_fast_apply (type_addr_of _ _) _)
-    | W.BinOp _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_bin_op _ _ _ _ _ _) _)
-    | W.CopyAllocId _ _ _ => notypeclasses refine (tac_fast_apply (type_copy_alloc_id _ _ _ _) _)
-    | W.UnOp _ _ _ => notypeclasses refine (tac_fast_apply (type_un_op _ _ _ _) _)
-    | W.CAS _ _ _ _ => notypeclasses refine (tac_fast_apply (type_cas _ _ _ _ _) _)
-    | W.Call _ _ => notypeclasses refine (tac_fast_apply (type_call _ _ _) _)
-    | W.OffsetOf _ _ => notypeclasses refine (tac_fast_apply (type_offset_of _ _ _) _)
-    | W.AnnotExpr _ ?a _ => notypeclasses refine (tac_fast_apply (type_annot_expr _ _ _ _) _)
-    | W.StructInit _ _ => notypeclasses refine (tac_fast_apply (type_struct_init _ _ _) _)
-    | W.IfE _ _ _ _ => notypeclasses refine (tac_fast_apply (type_ife _ _ _ _ _) _)
-    | W.LogicalAnd _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_logical_and _ _ _ _ _) _)
-    | W.LogicalOr _ _ _ _ _ => notypeclasses refine (tac_fast_apply (type_logical_or _ _ _ _ _) _)
-    | W.SkipE _ => notypeclasses refine (tac_fast_apply (type_skipe' _ _) _)
-    | W.MacroE _ _ _ => notypeclasses refine (tac_fast_apply (type_macro_expr _ _ _) _)
+    | W.Val _ => notypeclasses refine (tac_li_apply (type_val _ _) _)
+    | W.Loc _ => notypeclasses refine (tac_li_apply (type_val _ _) _)
+    | W.Use _ _ _ _ => notypeclasses refine (tac_li_apply (type_use _ _ _ _ _) _)
+    | W.AddrOf _ => notypeclasses refine (tac_li_apply (type_addr_of _ _) _)
+    | W.BinOp _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_bin_op _ _ _ _ _ _) _)
+    | W.CopyAllocId _ _ _ => notypeclasses refine (tac_li_apply (type_copy_alloc_id _ _ _ _) _)
+    | W.UnOp _ _ _ => notypeclasses refine (tac_li_apply (type_un_op _ _ _ _) _)
+    | W.CAS _ _ _ _ => notypeclasses refine (tac_li_apply (type_cas _ _ _ _ _) _)
+    | W.Call _ _ => notypeclasses refine (tac_li_apply (type_call _ _ _) _)
+    | W.OffsetOf _ _ => notypeclasses refine (tac_li_apply (type_offset_of _ _ _) _)
+    | W.AnnotExpr _ ?a _ => notypeclasses refine (tac_li_apply (type_annot_expr _ _ _ _) _)
+    | W.StructInit _ _ => notypeclasses refine (tac_li_apply (type_struct_init _ _ _) _)
+    | W.IfE _ _ _ _ => notypeclasses refine (tac_li_apply (type_ife _ _ _ _ _) _)
+    | W.LogicalAnd _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_logical_and _ _ _ _ _) _)
+    | W.LogicalOr _ _ _ _ _ => notypeclasses refine (tac_li_apply (type_logical_or _ _ _ _ _) _)
+    | W.SkipE _ => notypeclasses refine (tac_li_apply (type_skipe' _ _) _)
+    | W.MacroE _ _ _ => notypeclasses refine (tac_li_apply (type_macro_expr _ _ _) _)
     | _ => fail "do_expr: unknown expr" e
     end
   end.
 
 Ltac liRJudgement :=
   lazymatch goal with
-    | |- envs_entails _ (typed_write _ _ _ _ _ _) => notypeclasses refine (tac_fast_apply (type_write _ _ _ _ _ _ _ _) _); [ solve [refine _ ] |]
-    | |- envs_entails _ (typed_read _ _ _ _ _) => notypeclasses refine (tac_fast_apply (type_read _ _ _ _ _ _ _) _); [ solve [refine _ ] |]
-    | |- envs_entails _ (typed_addr_of _ _) => notypeclasses refine (tac_fast_apply (type_addr_of_place _ _ _ _) _); [solve [refine _] |]
+    | |- envs_entails _ (‖_‖ typed_write _ _ _ _ _ _) => notypeclasses refine (tac_li_apply (type_write _ _ _ _ _ _ _ _) _); [ solve [typeclasses eauto ] |]
+    | |- envs_entails _ (‖_‖ typed_read _ _ _ _ _) => notypeclasses refine (tac_li_apply (type_read _ _ _ _ _ _ _) _); [ solve [typeclasses eauto ] |]
+    | |- envs_entails _ (‖_‖ typed_addr_of _ _) => notypeclasses refine (tac_li_apply (type_addr_of_place _ _ _ _) _); [solve [typeclasses eauto] |]
   end.
 
 (* This does everything *)
@@ -268,7 +268,7 @@ Ltac liRStep :=
 
 Tactic Notation "liRStepUntil" open_constr(id) :=
   repeat lazymatch goal with
-         | |- @environments.envs_entails _ _ ?P =>
+         | |- @environments.envs_entails _ _ (‖_‖ ?P) =>
            lazymatch P with
            | id _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ => fail
            | id _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ => fail
@@ -289,7 +289,10 @@ Tactic Notation "liRStepUntil" open_constr(id) :=
            | _  => liRStep
            end
          | _ => liRStep
-  end; liShow.
+  end;
+  (* try to instantiate the evars in the pattern [id] *)
+  lazymatch goal with | |- @environments.envs_entails _ _ (‖_‖ ?P) => try unify P id end;
+  liShow.
 
 
 (** * Tactics for starting a function *)
@@ -331,6 +334,7 @@ Ltac liRSplitBlocksIntro :=
         | liImpl
         | liForall
         | liExist
+        | liModal
         | liUnfoldLetGoal]; liSimpl);
   li_unfold_lets_in_context.
 
@@ -358,4 +362,7 @@ Ltac split_blocks Pfull Ps :=
   iApply (typed_block_rec Hfull); unfold Hfull; clear Hfull; last first; [|
   repeat (iApply big_sepM_insert; [reflexivity|]; iSplitL); last by [iApply big_sepM_empty];
   iExists _; (iSplitR; [iPureIntro; unfold_code_marker_and_compute_map_lookup|]); iModIntro ];
-  repeat (iApply tac_split_big_sepM; [reflexivity|]; iIntros "?"); iIntros "_".
+  repeat (
+    lazymatch goal with
+    | |- envs_entails _ (([∗ map] _↦_ ∈ <[_:=_]>_, _) -∗ _) => iApply tac_split_big_sepM; [reflexivity|]; iIntros "?"
+    end); iIntros "_".

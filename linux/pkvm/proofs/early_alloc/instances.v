@@ -23,11 +23,11 @@ Proof.
 Qed.
 
 Global Instance simpl_ly_size_page_le i j:
-  SimplBothRel (≤)%nat (PAGES i).(ly_size) (PAGES j).(ly_size) (i ≤ j)%nat.
+  SimplBoth ((PAGES i).(ly_size) ≤ (PAGES j).(ly_size))%nat (i ≤ j)%nat.
 Proof. rewrite /PAGES /ly_with_align /ly_size /=. split; lia. Qed.
 
 Global Instance simpl_ly_size_page_eq i j:
-  SimplBothRel (=) (PAGES i).(ly_size) (PAGES j).(ly_size) (i = j).
+  SimplBoth ((PAGES i).(ly_size) = (PAGES j).(ly_size)) (i = j).
 Proof. rewrite !ly_size_PAGES. split; lia. Qed.
 
 Lemma ly_size_ly_offset ly m:

@@ -9,7 +9,7 @@ RefinedC to get at working setup suitable for development of RefinedC
 and building the examples in this repository:
 
 ```
-opam switch create . ocaml-variants.4.14.0+options ocaml-option-flambda --no-install
+opam switch create . ocaml-variants.4.14.2+options ocaml-option-flambda --no-install
 sudo apt-get install libmpfr-dev # Implicit Cerberus dependency.
 opam repo add coq-released "https://coq.inria.fr/opam/released"
 opam repo add iris-dev "https://gitlab.mpi-sws.org/iris/opam.git"

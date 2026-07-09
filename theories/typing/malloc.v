@@ -25,10 +25,10 @@ Section malloc_block.
     [instance find_in_context_malloc_block with FICSyntactic].
   Global Existing Instance find_in_context_malloc_block_inst | 1.
 
-  Lemma subsume_malloc_block A l n1 n2 T:
+  Lemma subsume_malloc_block A M l n1 n2 T:
     (∃ x, ⌜n1 = n2 x⌝ ∗ T x)
-    ⊢ subsume (malloc_block l n1) (λ x : A, malloc_block l (n2 x)) T.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (malloc_block l n1) M (λ x : A, malloc_block l (n2 x)) T.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_malloc_block_inst := [instance subsume_malloc_block].
   Global Existing Instance subsume_malloc_block_inst.
 End malloc_block.
@@ -46,23 +46,23 @@ Section malloced.
   Solve Obligations with try done.
   Next Obligation. by iIntros (??????) "?". Qed.
 
-  Lemma simplify_hyp_malloced_gen early l ty n T:
-    (malloc_block l n -∗ l ◁ₗ ty -∗ T) ⊢ simplify_hyp (l ◁ₗ malloced_gen early n ty) T.
+  Lemma simplify_hyp_malloced_gen early l ty n M T:
+    (malloc_block l n -∗ l ◁ₗ ty -∗ ‖M‖ T) ⊢ simplify_hyp (l ◁ₗ malloced_gen early n ty) M T.
   Proof. iIntros "HT [Hl HP]". by iApply ("HT" with "HP"). Qed.
   Definition simplify_hyp_malloced_gen_inst :=
     [instance simplify_hyp_malloced_gen with 0%N].
   Global Existing Instance simplify_hyp_malloced_gen_inst.
 
-  Lemma simplify_goal_malloced_early l ty n T:
-    malloc_block l n ∗ l ◁ₗ ty ∗ T  ⊢ simplify_goal (l ◁ₗ malloced_gen true n ty) T.
-  Proof. iIntros "[$ [$ $]]". Qed.
+  Lemma simplify_goal_malloced_early l ty n M T:
+    malloc_block l n ∗ l ◁ₗ ty ∗ T  ⊢ simplify_goal M (l ◁ₗ malloced_gen true n ty) T.
+  Proof. by iIntros "[$ [$ $]] !>". Qed.
   Definition simplify_goal_malloced_early_inst :=
     [instance simplify_goal_malloced_early with 0%N].
   Global Existing Instance simplify_goal_malloced_early_inst.
 
-  Lemma simplify_goal_malloced_late l ty n T:
-    l ◁ₗ ty ∗ malloc_block l n ∗ T  ⊢ simplify_goal (l ◁ₗ malloced_gen false n ty) T.
-  Proof. iIntros "[$ [$ $]]". Qed.
+  Lemma simplify_goal_malloced_late l ty n M T:
+    l ◁ₗ ty ∗ malloc_block l n ∗ T  ⊢ simplify_goal M (l ◁ₗ malloced_gen false n ty) T.
+  Proof. by iIntros "[$ [$ $]] !>". Qed.
   Definition simplify_goal_malloced_late_inst :=
     [instance simplify_goal_malloced_late with 0%N].
   Global Existing Instance simplify_goal_malloced_late_inst.

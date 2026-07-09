@@ -145,6 +145,31 @@ struct test test_struct_return() {
   test.a = 1;
   return test;
 }
+// Test a recursive type with a recursive occurrence inside an array
+//
+//@rc::inlined
+//@ Inductive tree A : Type := | leaf : tree A | node : tree A → A → tree A → tree A.
+//@
+//@ Arguments leaf {_}.
+//@ Arguments node {_}.
+//@
+//@ Definition node_data {A} (t : tree A) : option (tree A * A * tree A) :=
+//@   match t with
+//@   | leaf       => None
+//@   | node l v r => Some (l, v, r)
+//@   end.
+//@rc::end
+struct
+[[rc::refined_by("t : {tree Z}")]]
+[[rc::typedef("tree_t : {node_data t} @ optionalO<λ(l,k,r).&own<...>>")]]
+node {
+  [[rc::field("k @ int<i32>")]]
+  int key;
+
+  [[rc::field("array<void*, [l @ tree_t; r @ tree_t]>")]]
+  struct node* a[2];
+};
+
 
 typedef void (*test_fn)(void);
 
@@ -217,6 +242,26 @@ void test_manual_exist_arg_client() {
   rc_assert;
   test_manual_exist_arg(40);
 }
+
+[[rc::context("A : Type")]]
+[[rc::parameters("ty : {lvar \"tyl\" (A -> type)}", "a : A", "l : loc")]]
+[[rc::args("l @ &own<{ty a}>")]]
+[[rc::ensures("own l : {ty a}")]]
+void context_noop(void* a) {
+  return;
+}
+
+[[rc::requires("True")]]
+[[rc::instantiate("A := Z")]]
+void context_caller() {
+  int n = 42;
+
+  [[rc::constraints("[set_lvar \"tyl\" (fun z => z @ (int i32))]")]]
+    rc_assert;
+  context_noop(&n);
+  return;
+}
+
 
 /** Test higher-order function where client's closure's spec doesn't
     syntactically match expected spec. This tests that the universal and

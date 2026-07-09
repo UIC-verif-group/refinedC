@@ -83,58 +83,58 @@ Section bytewise.
     LocInBounds (bytewise P ly) β (ly_size ly).
   Proof. constructor. iIntros (?). by iApply bytewise_loc_in_bounds. Qed.
 
-  Lemma subsume_bytewise_ex A l β P1 P2 ly1 ly2 T:
-    subsume (l ◁ₗ{β} bytewise P1 ly1) (λ x : A, l ◁ₗ{β} bytewise P2 (ly2 x)) T
+  Lemma subsume_bytewise_ex A M l β P1 P2 ly1 ly2 T:
+    subsume (l ◁ₗ{β} bytewise P1 ly1) M (λ x : A, l ◁ₗ{β} bytewise P2 (ly2 x)) T
       where `{!∀ x, ContainsEx (ly2 x)} :-
               exhale ⌜∀ b, P1 b → P2 b⌝; ∃ x, exhale ⌜ly1 = ly2 x⌝; return T x.
   Proof.
-    liFromSyntax. iIntros (_) "[% [% [-> ?]]] Hl".
+    liFromSyntax. iIntros (_) "[% [% [-> ?]]] Hl !>".
     iExists _. iFrame. by iApply bytewise_weaken.
   Qed.
   Definition subsume_bytewise_ex_inst := [instance subsume_bytewise_ex].
   Global Existing Instance subsume_bytewise_ex_inst | 50.
 
-  Lemma subsume_bytewise_eq A l β P1 P2 ly1 ly2
+  Lemma subsume_bytewise_eq A M l β P1 P2 ly1 ly2
         `{!CanSolve (ly1.(ly_size) = ly2.(ly_size))} T:
     ⌜∀ b, P1 b → P2 b⌝ ∗
-    (⌜l `has_layout_loc` ly1⌝ -∗ ⌜l `has_layout_loc` ly2⌝ ∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
+    (⌜l `has_layout_loc` ly1⌝ -∗ ‖M‖ ⌜l `has_layout_loc` ly2⌝ ∗ ∃ x, T x)
+    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) M (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
   Proof.
     revert select (CanSolve _) => Hsz. unfold CanSolve in *.
     iDestruct 1 as (HPs) "HT". iDestruct 1 as (??? HP) "?".
     apply (Forall_impl _ _ _ HP) in HPs.
-    iDestruct ("HT" with "[//]") as (??) "?". iFrame. by rewrite /has_layout_val -Hsz.
+    iMod ("HT" with "[//]") as (??) "?". iModIntro. iFrame. by rewrite /has_layout_val -Hsz.
   Qed.
   Definition subsume_bytewise_eq_inst := [instance subsume_bytewise_eq].
   Global Existing Instance subsume_bytewise_eq_inst | 5.
 
-  Lemma subsume_bytewise_merge A l β P1 P2 ly1 ly2
+  Lemma subsume_bytewise_merge A M l β P1 P2 ly1 ly2
         `{!CanSolve (ly1.(ly_size) ≤ ly2.(ly_size))%nat} T:
     ⌜∀ b, P1 b → P2 b⌝ ∗
     ⌜ly_align ly2 ≤ ly_align ly1⌝%nat ∗
     ((l +ₗ ly1.(ly_size)) ◁ₗ{β} bytewise P2 (ly_offset ly2 ly1.(ly_size)) ∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
+    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) M (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
   Proof.
     unfold CanSolve in *.
-    iIntros "(%&%&?&%&?) Hl".
+    iIntros "(%&%&?&%&?) Hl !>".
     iDestruct (bytewise_weaken with "Hl") as "Hl" => //.
     iExists _. iFrame. iApply (merge_bytewise with "Hl") => //.
   Qed.
   Definition subsume_bytewise_merge_inst := [instance subsume_bytewise_merge].
   Global Existing Instance subsume_bytewise_merge_inst | 10.
 
-  Lemma subsume_bytewise_split A l β P1 P2 ly1 ly2
+  Lemma subsume_bytewise_split A M l β P1 P2 ly1 ly2
         `{!CanSolve (ly2.(ly_size) ≤ ly1.(ly_size))%nat} T:
     ⌜∀ b, P1 b → P2 b⌝ ∗
     ⌜ly_align ly2 ≤ ly_align ly1⌝%nat ∗
-    ((l +ₗ ly2.(ly_size)) ◁ₗ{β} bytewise P1 (ly_offset ly1 ly2.(ly_size)) -∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
+    ((l +ₗ ly2.(ly_size)) ◁ₗ{β} bytewise P1 (ly_offset ly1 ly2.(ly_size)) -∗‖M‖ ∃ x, T x)
+    ⊢ subsume (l ◁ₗ{β} bytewise P1 ly1) M (λ x : A, l ◁ₗ{β} bytewise P2 ly2) T.
   Proof.
     unfold CanSolve in *.
     iIntros "(%&%&HT) Hl".
     iDestruct (split_bytewise with "Hl") as "[Hl1 Hl2]" => //.
     iDestruct (bytewise_weaken with "Hl1") as "Hl1" => //.
-    iDestruct ("HT" with "Hl2") as (?) "?". iExists _. iFrame.
+    iMod ("HT" with "Hl2") as (?) "?". iModIntro. iFrame.
     iDestruct "Hl1" as (????) "Hl1".
     iExists _; iFrame. iPureIntro; split_and! => //.
     by apply: has_layout_loc_trans'.
@@ -186,15 +186,15 @@ Section uninit.
   Qed.
 
   (* This only works for [Own] since [ty] might have interior mutability. *)
-  Lemma uninit_mono A l ty ly `{!TCDone (ty.(ty_has_op_type) (UntypedOp ly) MCNone)} T:
-    (∀ v, v ◁ᵥ ty -∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ ty) (λ x : A, l ◁ₗ uninit ly) T.
+  Lemma uninit_mono A M l ty ly `{!TCDone (ty.(ty_has_op_type) (UntypedOp ly) MCNone)} T:
+    (∀ v, v ◁ᵥ ty -∗ ‖M‖ ∃ x, T x)
+    ⊢ subsume (l ◁ₗ ty) M (λ x : A, l ◁ₗ uninit ly) T.
   Proof.
     unfold TCDone in *; subst. iIntros "HT Hl".
     iDestruct (ty_aligned with "Hl") as %?; [done|].
     iDestruct (ty_deref with "Hl") as (v) "[Hl Hv]"; [done|].
     iDestruct (ty_size_eq with "Hv") as %?; [done|].
-    iDestruct ("HT" with "Hv") as (?) "?". iExists _. iFrame.
+    iMod ("HT" with "Hv") as (?) "?". iModIntro. iFrame.
     iExists v. iFrame. by rewrite Forall_forall.
   Qed.
   (* This rule is handled with a definition and an [Hint Extern] (not
@@ -245,10 +245,10 @@ Notation "uninit< ly >" := (uninit ly) (only printing, format "'uninit<' ly '>'"
 
 (* See the definition of [uninit_mono_inst].
    This hint should only apply ty is not uninit as this case is covered by the rules for bytes. *)
-Global Hint Extern 5 (Subsume (_ ◁ₗ ?ty) (λ _, _ ◁ₗ (uninit _))%I) =>
+Global Hint Extern 5 (Subsume (_ ◁ₗ ?ty) _ (λ _, _ ◁ₗ (uninit _))%I) =>
   lazymatch ty with
   | uninit _ => fail
-  | _ => unshelve notypeclasses refine (uninit_mono_inst _ _ _ _ _)
+  | _ => unshelve notypeclasses refine (uninit_mono_inst _ _ _ _ _ _)
   end
   : typeclass_instances.
 
@@ -269,11 +269,11 @@ Notation zeroed := (bytewise (λ b, b = MByte byte0 None)).
 Section zeroed.
   Context `{!typeG Σ}.
 
-  Lemma subsume_uninit_zeroed A p ly1 ly2 T:
+  Lemma subsume_uninit_zeroed A M p ly1 ly2 T:
     ⌜ly_align ly1 = ly_align ly2⌝ ∗ ⌜ly_size ly2 = 0%nat⌝ ∗ (p ◁ₗ uninit ly1 -∗ ∃ x, T x)
-    ⊢ subsume (p ◁ₗ uninit ly1)%I (λ x : A, p ◁ₗ zeroed ly2)%I T.
+    ⊢ subsume (p ◁ₗ uninit ly1)%I M (λ x : A, p ◁ₗ zeroed ly2)%I T.
   Proof.
-    iDestruct 1 as (H1 H2) "HT". iIntros "Hp".
+    iDestruct 1 as (H1 H2) "HT". iIntros "Hp !>".
     iDestruct (ty_aligned _ (UntypedOp _) MCNone with "Hp") as %Hal; [done|].
     iDestruct (loc_in_bounds_in_bounds with "Hp") as "#Hlib".
     iDestruct ("HT" with "Hp") as (?) "?". iExists _. iFrame.

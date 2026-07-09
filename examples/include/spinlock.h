@@ -29,7 +29,6 @@ void sl_lock(struct spinlock* lock);
 [[rc::args("p @ &frac<beta, spinlock<gamma>>")]]
 [[rc::requires("[lock_token gamma []]")]]
 [[rc::ensures("frac beta p : spinlock<gamma>")]]
-[[rc::annot_args("0 : 1 LockA")]]
 void sl_unlock(struct spinlock* lock);
 
 // Locks both a and b in a determinitic order (used to avoid deadlocks).

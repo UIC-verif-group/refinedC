@@ -53,7 +53,7 @@ npfp_scheduler {
 	      " npfp_enqueue_func sched_state msg} @ npfp_t")]]
 [[rc::tactics("by apply msg_type_bounded.")]]
 [[rc::tactics("apply npfp_enqueue_add_msg_to_q1. by rewrite /get_priority/update_msg_type/set_msg_type /=; simplify_option_eq.")]]
-[[rc::tactics("rewrite /update_msg_type /set_msg_type /get_priority/add_msg_to_q/=. simplify_option_eq. symmetry. eapply list_lookup_total_insert; solve_goal.")]]
+[[rc::tactics("rewrite /update_msg_type /set_msg_type /get_priority/add_msg_to_q/=. simplify_option_eq. symmetry. eapply list_lookup_total_insert_eq; solve_goal.")]]
 [[rc::tactics("eapply npfp_enqueue_create_bitmap_addmsg. by rewrite /get_priority/update_msg_type/set_msg_type/=; simplify_option_eq.")]]
 [[rc::tactics("apply npfp_enqueue_create_bitmap_addmsg2; unfold get_priority in *; simplify_option_eq; solve_goal.")]]
 static inline

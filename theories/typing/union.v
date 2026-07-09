@@ -27,7 +27,7 @@ Section union.
     iExists _. iSplit => //.
     iApply (apply_subsume_place_true with "Hs"). iApply subsume_uninit_padded.
     iExists tt. iSplit => //. iPureIntro.
-    split; apply max_list_elem_of_le; apply elem_of_list_fmap_1; by apply: layout_of_union_member_in_ul.
+    split; apply max_list_elem_of_le; apply list_elem_of_fmap_2; by apply: layout_of_union_member_in_ul.
   Qed.
   Definition type_place_uninit_union_inst := [instance type_place_uninit_union].
   Global Existing Instance type_place_uninit_union_inst.
@@ -109,17 +109,17 @@ Section union.
     iSplitR => //. iExists _, _. by iFrame.
   Qed.
 
-  Lemma subsume_int_tunion_tag B ti x (n : Z) l β T:
+  Lemma subsume_int_tunion_tag B M ti x (n : Z) l β T:
     (∃ y, ⌜ti.(ti_tag) (x y) =@{Z} n⌝ ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} n @ int size_t) (λ y : B, l ◁ₗ{β} tunion_tag ti (x y)) T.
-  Proof. iIntros "[% [<- ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (l ◁ₗ{β} n @ int size_t) M (λ y : B, l ◁ₗ{β} tunion_tag ti (x y)) T.
+  Proof. iIntros "[% [<- ?]] ?". iModIntro. iFrame. Qed.
   Definition subsume_int_tunion_tag_inst := [instance subsume_int_tunion_tag].
   Global Existing Instance subsume_int_tunion_tag_inst.
 
-  Lemma subsume_tunion_tag B ti x1 x2 l β T:
+  Lemma subsume_tunion_tag M B ti x1 x2 l β T:
     (∃ y, ⌜ti.(ti_tag) x1 = ti.(ti_tag) (x2 y)⌝ ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} tunion_tag ti x1) (λ y : B, l ◁ₗ{β} tunion_tag ti (x2 y)) T.
-  Proof. rewrite /ty_own/=. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (l ◁ₗ{β} tunion_tag ti x1) M (λ y : B, l ◁ₗ{β} tunion_tag ti (x2 y)) T.
+  Proof. rewrite /ty_own/=. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_tunion_tag_inst := [instance subsume_tunion_tag].
   Global Existing Instance subsume_tunion_tag_inst.
 
@@ -158,30 +158,30 @@ Section union.
   Next Obligation. iIntros (?????????) "Hl Hv" => /=. by iApply (ty_ref with "[] Hl Hv"). Qed.
   Next Obligation. iIntros (????????) "Hv". by iApply (ty_memcast_compat with "Hv"). Qed.
 
-  Lemma subsume_active_union_variant B ti ul x l β ty1 ty2 n T:
+  Lemma subsume_active_union_variant B M ti ul x l β ty1 ty2 n T:
     (l at_union{ul}ₗ n ◁ₗ{β} ty1 -∗
-      ∃ y, ⌜ti.(ti_union_layout) = ul⌝ ∗ ⌜(ti_member ti (x y)).1 = n⌝ ∗
+      ‖M‖ ∃ y, ⌜ti.(ti_union_layout) = ul⌝ ∗ ⌜(ti_member ti (x y)).1 = n⌝ ∗
             (l at_union{ul}ₗ n ◁ₗ{β} ty2 y) ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} active_union ul n ty1) (λ y : B, l ◁ₗ{β} variant ti (x y) (ty2 y)) T.
+    ⊢ subsume (l ◁ₗ{β} active_union ul n ty1) M (λ y : B, l ◁ₗ{β} variant ti (x y) (ty2 y)) T.
   Proof.
     iIntros "HT". iDestruct 1 as (ly Hly) "Hu".
     iDestruct (padded_focus with "Hu") as "[Hl Hpad]".
-    rewrite /GetMemberUnionLoc/=. iDestruct ("HT" with "[$]") as (? <- <-) "[??]".
-    iDestruct ("Hpad" with "[$]") as "?". iExists _. iFrame.
+    rewrite /GetMemberUnionLoc/=. iMod ("HT" with "[$]") as (? <- <-) "[??]".
+    iDestruct ("Hpad" with "[$]") as "?". iModIntro. iFrame.
     move: Hly => /layout_of_member_ti_member ->. done.
   Qed.
   Definition subsume_active_union_variant_inst := [instance subsume_active_union_variant].
   Global Existing Instance subsume_active_union_variant_inst.
 
-  Lemma subsume_variant_variant B ti x1 x2 l β ty1 ty2 T:
+  Lemma subsume_variant_variant B M ti x1 x2 l β ty1 ty2 T:
     (l at_union{ti.(ti_union_layout)}ₗ (ti_member ti x1).1 ◁ₗ{β} ty1 -∗
-      ∃ y, ⌜ti.(ti_tag) x1 = ti.(ti_tag) (x2 y)⌝ ∗
+      ‖M‖ ∃ y, ⌜ti.(ti_tag) x1 = ti.(ti_tag) (x2 y)⌝ ∗
       l at_union{ti.(ti_union_layout)}ₗ (ti_member ti x1).1 ◁ₗ{β} (ty2 y) ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} variant ti x1 ty1) (λ y : B, l ◁ₗ{β} variant ti (x2 y) (ty2 y)) T.
+    ⊢ subsume (l ◁ₗ{β} variant ti x1 ty1) M (λ y : B, l ◁ₗ{β} variant ti (x2 y) (ty2 y)) T.
   Proof.
     iIntros "HT". rewrite !/(ty_own (variant _ _ _))/=/ti_member.
     iIntros "Hpad". iDestruct (padded_focus with "Hpad") as "[Hl Hpad]".
-    iDestruct ("HT" with "Hl") as (? Heq) "[??]". iExists _. iFrame.
+    iMod ("HT" with "Hl") as (? Heq) "[??]". iModIntro. iFrame.
     rewrite Heq. by iApply "Hpad".
   Qed.
   Definition subsume_variant_variant_inst := [instance subsume_variant_variant].
@@ -242,21 +242,21 @@ Section tunion.
   Next Obligation. iIntros (????????) "Hl Hv". by iApply (ty_ref with "[] Hl Hv"). Qed.
   Next Obligation. move => ???????. by apply ty_memcast_compat. Qed.
 
-  Lemma simplify_hyp_tunion ti x l β T:
+  Lemma simplify_hyp_tunion ti x l β M T:
     (l ◁ₗ{β} struct ti.(ti_base_layout) [
          tunion_tag ti x;
-         variant ti x (ti.(ti_type) x) ] -∗ T)
-    ⊢ simplify_hyp (l◁ₗ{β} x @ tunion ti) T.
+         variant ti x (ti.(ti_type) x) ] -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l◁ₗ{β} x @ tunion ti) M T.
   Proof. iIntros "HT Hl". by iApply "HT". Qed.
   Definition simplify_hyp_tunion_inst := [instance simplify_hyp_tunion with 0%N].
   Global Existing Instance simplify_hyp_tunion_inst.
 
-  Lemma simplify_goal_tunion ti x l β T:
+  Lemma simplify_goal_tunion ti x l β M T:
     l ◁ₗ{β} struct ti.(ti_base_layout) [
          tunion_tag ti x;
          variant ti x (ti.(ti_type) x) ] ∗ T
-    ⊢ simplify_goal (l◁ₗ{β} x @ tunion ti) T.
-  Proof. iIntros "[$ $]". Qed.
+    ⊢ simplify_goal M (l◁ₗ{β} x @ tunion ti) T.
+  Proof. by iIntros "[$ $] !>". Qed.
   Definition simplify_goal_tunion_inst := [instance simplify_goal_tunion with 0%N].
   Global Existing Instance simplify_goal_tunion_inst.
 

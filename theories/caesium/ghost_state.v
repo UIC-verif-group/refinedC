@@ -1,11 +1,11 @@
 From stdpp Require Import coPset.
-From Coq Require Import QArith Qcanon.
+From Stdlib Require Import QArith Qcanon.
 From iris.algebra Require Import big_op gmap frac agree.
 From iris.algebra Require Import csum excl auth cmra_big_op numbers.
 From iris.bi Require Import fractional.
 From iris.base_logic Require Export lib.own.
 From iris.base_logic.lib Require Import ghost_map.
-From iris.proofmode Require Export tactics.
+From iris.proofmode Require Export proofmode.
 From caesium Require Export lang.
 Set Default Proof Using "Type".
 Import uPred.
@@ -178,13 +178,13 @@ Section definitions.
     own heap_heap_name (● to_heapUR h).
 
   Definition alloc_meta_ctx (ub : allocs) : iProp Σ :=
-    ghost_map_auth heap_alloc_meta_map_name 1 (to_alloc_meta_map ub).
+    heap_alloc_meta_map_name ↪●MAP (to_alloc_meta_map ub).
 
   Definition alloc_alive_ctx (ub : allocs) : iProp Σ :=
-    ghost_map_auth heap_alloc_alive_map_name 1 (to_alloc_alive_map ub).
+    heap_alloc_alive_map_name ↪●MAP (to_alloc_alive_map ub).
 
   Definition fntbl_ctx (fns : gmap addr function) : iProp Σ :=
-    ghost_map_auth heap_fntbl_name 1 fns.
+    heap_fntbl_name ↪●MAP fns.
 
   Definition heap_state_ctx (st : heap_state) : iProp Σ :=
     ⌜heap_state_invariant st⌝ ∗
@@ -414,8 +414,8 @@ Section loc_in_bounds.
     iDestruct "Hlib" as (?????[??]) "?". iPureIntro. lia.
   Qed.
 
-  Lemma loc_in_bounds_in_range_uintptr_t l n:
-    loc_in_bounds l n -∗ ⌜l.2 ∈ uintptr_t⌝.
+  Lemma loc_in_bounds_in_range_size_t l n:
+    loc_in_bounds l n -∗ ⌜l.2 ∈ size_t⌝.
   Proof.
     iIntros "Hl". iDestruct (loc_in_bounds_ptr_in_range with "Hl") as %Hrange.
     iPureIntro. move: Hrange.
@@ -522,7 +522,7 @@ Section heap.
     rewrite heap_mapsto_mbyte_eq.
     iIntros "[H1 H2]".
     iDestruct "H1" as (??) "H1". iDestruct "H2" as (??) "H2".
-    iCombine "H1 H2" as "H". rewrite own_valid discrete_valid.
+    iCombine "H1 H2" as "H". rewrite own_valid.
     iDestruct "H" as %Hvalid. iPureIntro.
     move: Hvalid => /= /auth_frag_valid /singleton_valid.
     move => -[] /= _ /to_agree_op_inv_L => ?. by simplify_eq.
@@ -778,13 +778,13 @@ Section heap.
 
     apply local_update_total_valid=> _ Hvalid _.
     have ? : (([^op list] k↦y ∈ bl, {[a + (1 + k) := (1%Qp, to_lock_stateR (RSt 0%nat), to_agree (aid, y))]} : heapUR) !! a = None). {
-      move: (Hvalid a). rewrite lookup_op lookup_singleton.
+      move: (Hvalid a). rewrite lookup_op lookup_singleton_eq.
       by move=> /(cmra_discrete_valid_iff 0%nat) /exclusiveN_Some_l.
     }
     rewrite -insert_singleton_op //. etrans.
     { apply (delete_local_update _ _ a (1%Qp, to_lock_stateR (RSt 0%nat), to_agree (aid, b))).
-      by rewrite lookup_insert. }
-    rewrite delete_insert // -to_heapUR_delete (heap_free_delete _ a).
+      by rewrite lookup_insert_eq. }
+    rewrite delete_insert_id // -to_heapUR_delete (heap_free_delete _ a).
     setoid_rewrite Z.add_assoc. by apply IH.
   Qed.
 

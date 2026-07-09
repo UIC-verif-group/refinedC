@@ -8,11 +8,11 @@ Global Typeclasses Opaque set_lvar.
 
 Notation "'lvar' id : v" := (LVAR_HINT id v) (at level 200, only printing).
 
-Lemma simplify_goal_set_lvar Σ A (x : A) name (T : iProp Σ) :
-  (⌜LVAR_HINT name x⌝ -∗ T) ⊢ simplify_goal (set_lvar name x) T.
+Lemma simplify_goal_set_lvar Σ M A (x : A) name (T : iProp Σ) :
+  (⌜LVAR_HINT name x⌝ -∗ ‖M‖ T) ⊢ simplify_goal M (set_lvar name x) T.
 Proof.
-  iIntros "HT". rewrite /set_lvar. iSplit => //. iApply "HT".
-  iPureIntro. constructor. by unlock.
+  iIntros "HT". rewrite /set_lvar. iMod ("HT" with "[%]") as "$"; [|by iModIntro].
+  constructor. by unlock.
 Qed.
 Definition simplify_goal_set_lvar_inst := [instance simplify_goal_set_lvar with 0%N].
 Global Existing Instance simplify_goal_set_lvar_inst.

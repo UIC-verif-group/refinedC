@@ -138,7 +138,7 @@ Section type.
     - iDestruct "Hγ" as "[$ Hks]".
       iSplit; first done. by iApply "IH".
     - rewrite -/fmap /cmra_car /=. apply not_elem_of_list_to_map.
-      by rewrite -list_fmap_compose elem_of_list_fmap_inj.
+      by rewrite -list_fmap_compose list_elem_of_fmap_inj.
   Qed.
 
   Theorem alloc_tickets_aux :
@@ -195,13 +195,13 @@ Section type.
 
   Definition hyp_spinlock_t_invariant (id : lock_id) (p1 p2 : loc) : iProp Σ := (
     ∃ owner next : Z,
-      ⌜owner ≤ next ∧ owner ≠ NO_TICKET⌝ ∗
       p1 ◁ₗ owner @ int u16 ∗
       p2 ◁ₗ next  @ int u16 ∗
+      ⌜owner ≤ next ∧ owner ≠ NO_TICKET⌝ ∗
       owner_frag id.(γ_owner) owner ∗
       ticket_range id 0 owner ∗
       ticket_range id next (LAST_TICKET + 1) ∗
-      ((ticket id owner ∧ ⌜owner < next⌝) ∨ spinlock_token id [])
+      ((ticket id owner ∗ ⌜owner < next⌝) ∨ spinlock_token id [])
   )%I.
 
   Global Instance hyp_spinlock_t_timeless id o n: Timeless (hyp_spinlock_t_invariant id o n).

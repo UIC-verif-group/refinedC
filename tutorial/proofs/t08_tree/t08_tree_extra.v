@@ -17,12 +17,18 @@ Definition node_data {A} (t : tree A) : option (tree A * A * tree A) :=
   end.
 
 Global Instance simpl_node_data_None A (t : tree A) :
-  SimplBothRel (=) (node_data t) None (t = leaf).
+  SimplBoth (node_data t = None) (t = leaf).
 Proof. split; destruct t; naive_solver. Qed.
+Definition simpl_node_data_None_sym A (t : tree A) :=
+  simpl_both_sym (=) (simpl_node_data_None A t).
+Global Existing Instance simpl_node_data_None_sym.
 
 Global Instance simpl_node_data_Some A (t : tree A) x y z :
-  SimplBothRel (=) (node_data t) (Some (x, y, z)) (t = node x y z).
+  SimplBoth (node_data t = Some (x, y, z)) (t = node x y z).
 Proof. split; destruct t; naive_solver. Qed.
+Definition simpl_node_data_Some_sym A (t : tree A) x y z :=
+  simpl_both_sym (=) (simpl_node_data_Some A t x y z).
+Global Existing Instance simpl_node_data_Some_sym.
 
 Fixpoint tree_member (key : Z) (t : tree Z) : bool :=
   match t with

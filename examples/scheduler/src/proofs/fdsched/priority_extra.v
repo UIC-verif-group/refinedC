@@ -1,4 +1,4 @@
-From lithium Require Import bitblast.
+From stdpp.unstable Require Import bitblast.
 From refinedc.typing Require Import typing.
 From caesium Require Import builtins_specs.
 
@@ -193,7 +193,7 @@ Proof.
     + apply list_lookup_lookup_total_lt => /=. lia.
     + replace i with (priority `mod` 64) by lia.
       rewrite Z.mul_comm -Z_div_mod_eq_full.
-      rewrite list_lookup_insert => //; lia.
+      rewrite list_lookup_insert_eq => //; lia.
   - eapply encode_prio_bitmap_insert=> //; try lia.
     apply list_lookup_lookup_total_lt => /=. lia.
 Qed.

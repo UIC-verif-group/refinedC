@@ -15,10 +15,10 @@ Section type.
   Definition idx_to_node (vmemmap : loc) (vmemmap_len :nat) (next : option (option Z) ) : option (option type) :=
     (λ no : option _, (λ n, array_ptr struct_hyp_page vmemmap n vmemmap_len) <$> no) <$> next.
 
-  Lemma subsume_list_node A n1 n2 l β T:
+  Lemma subsume_list_node A M n1 n2 l β T:
     (∃ x, ⌜n1 = n2 x⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} list_node n1) (λ x : A, l ◁ₗ{β} list_node (n2 x)) T.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (l ◁ₗ{β} list_node n1) M (λ x : A, l ◁ₗ{β} list_node (n2 x)) T.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_list_node_inst := [instance subsume_list_node].
   Global Existing Instance subsume_list_node_inst.
 
@@ -34,33 +34,33 @@ Section type.
     find_buddy vmemmap order page ≠ page.
   Proof. Admitted.
 
-  Lemma simplify_goal_place_find_buddy_lt vmemmap p order β ty `{!CanSolve (p < find_buddy vmemmap order p)} T:
+  Lemma simplify_goal_place_find_buddy_lt vmemmap p order β ty `{!CanSolve (p < find_buddy vmemmap order p)} M T:
     hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ find_buddy vmemmap order p) ◁ₗ{β} ty ∗ T
-    ⊢ simplify_goal ((hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ p) +ₗ ly_size (PAGE_LAYOUT (1 ≪ order))) ◁ₗ{β} ty) T.
+    ⊢ simplify_goal M ((hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ p) +ₗ ly_size (PAGE_LAYOUT (1 ≪ order))) ◁ₗ{β} ty) T.
   Proof. Admitted.
   Definition simplify_goal_place_find_buddy_lt_inst := [instance simplify_goal_place_find_buddy_lt with 0%N].
   Global Existing Instance simplify_goal_place_find_buddy_lt_inst.
-  Lemma simplify_goal_place_find_buddy_gt vmemmap p order β ty T:
+  Lemma simplify_goal_place_find_buddy_gt vmemmap p order β ty M T:
     ⌜find_buddy vmemmap order p < p⌝ ∗ hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ p) ◁ₗ{β} ty ∗ T
-    ⊢ simplify_goal ((hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ find_buddy vmemmap order p) +ₗ ly_size (PAGE_LAYOUT (1 ≪ order))) ◁ₗ{β} ty) T.
+    ⊢ simplify_goal M ((hyp_page_to_virt vmemmap (vmemmap offset{struct_hyp_page}ₗ find_buddy vmemmap order p) +ₗ ly_size (PAGE_LAYOUT (1 ≪ order))) ◁ₗ{β} ty) T.
   Proof. Admitted.
   Definition simplify_goal_place_find_buddy_gt_inst := [instance simplify_goal_place_find_buddy_gt with 0%N].
   Global Existing Instance simplify_goal_place_find_buddy_gt_inst.
 
   Global Instance simpl_page_layout_size_le n1 n2:
     SimplAndUnsafe (ly_size (PAGE_LAYOUT n1) ≤ ly_size (PAGE_LAYOUT n2))%nat (n1 ≤ n2).
-  Proof. rewrite /PAGE_LAYOUT/ly_size/= => ?. rewrite /PAGE_SIZE. lia. Qed.
+  Proof. constructor. rewrite /PAGE_LAYOUT/ly_size/= => ?. rewrite /PAGE_SIZE. lia. Qed.
   Global Instance simpl_shiftl_monol_le n m1 m2 `{!CanSolve (0 < n ∧ 0 ≤ m1 ∧ 0 ≤ m2)}:
     SimplBoth (n ≪ m1 ≤ n ≪ m2) (m1 ≤ m2).
   Proof.
-    unfold CanSolve in *.
-      by rewrite /SimplBoth !Z.shiftl_mul_pow2 -?Z.mul_le_mono_pos_l -?Z.pow_le_mono_r_iff; [|lia..].
+    constructor. unfold CanSolve in *.
+      by rewrite !Z.shiftl_mul_pow2 -?Z.mul_le_mono_pos_l -?Z.pow_le_mono_r_iff; [|lia..].
   Qed.
   Global Instance simpl_page_layout_shift order `{!CanSolve (0 ≤ order)}:
-    SimplAndRel (=) (ly_size (PAGE_LAYOUT (1 ≪ (order + 1))) - ly_size (PAGE_LAYOUT (1 ≪ order)))%nat
-                (ly_size (PAGE_LAYOUT (1 ≪ order))) (True).
+    SimplAnd (ly_size (PAGE_LAYOUT (1 ≪ (order + 1))) - ly_size (PAGE_LAYOUT (1 ≪ order)) = (ly_size (PAGE_LAYOUT (1 ≪ order))))%nat
+                 (True).
   Proof.
-    unfold CanSolve in *. split; [|naive_solver] => ?.
+    constructor. unfold CanSolve in *. split; [naive_solver|] => ?.
     have ?:= Z.pow_nonneg 2 order.
     rewrite/ly_size/=/PAGE_SIZE !Z.shiftl_mul_pow2  -?Z2Nat.inj_sub -?Z.mul_sub_distr_l ?Z.pow_add_r /=; nia.
   Qed.

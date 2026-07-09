@@ -51,7 +51,7 @@ Section function.
   }.
 
   Definition fn_ret_prop {B} (fr : B → fn_ret) : val → type → iProp Σ :=
-    (λ v ty, v ◁ᵥ ty -∗ ∃ x, v ◁ᵥ (fr x).(fr_rty) ∗ (fr x).(fr_R) ∗ True)%I.
+    (λ v ty, v ◁ᵥ ty -∗ ‖={⊤}=‖ ∃ x, v ◁ᵥ (fr x).(fr_rty) ∗ (fr x).(fr_R) ∗ True)%I.
 
   Definition FP_wf {B} (atys : list type) (Pa : iProp Σ) (fr : B → fn_ret)  :=
     FP atys Pa B fr.
@@ -98,8 +98,8 @@ Section function.
     - rewrite /typed_stmt_post_cond. iIntros (v).
       iDestruct 1 as (?) "[?[? HR]]". rewrite Hlsa.
       iExists _. iFrame.
-      iIntros "Hty". iDestruct ("HR" with "Hty") as (y) "[?[??]]".
-      have [-> ->]:= Hret y.
+      iIntros "Hty". iMod ("HR" with "Hty") as (y) "[?[??]]".
+      iModIntro. have [-> ->]:= Hret y.
       iExists (rew [λ x : Type, x] Heq in y). iFrame.
   Qed.
 
@@ -129,7 +129,7 @@ Section function.
   Qed.
 
   Lemma type_call_fnptr l v vl tys fp T:
-    (([∗ list] v;ty∈vl; tys, v ◁ᵥ ty) -∗ ∃ x,
+    (([∗ list] v;ty∈vl; tys, v ◁ᵥ ty) -∗ ‖={⊤}=‖ ∃ x,
       ([∗ list] v;ty∈vl; (fp x).(fp_atys), v ◁ᵥ ty) ∗
       (fp x).(fp_Pa) ∗ ∀ v x',
       ((fp x).(fp_fr) x').(fr_R) -∗
@@ -137,7 +137,7 @@ Section function.
     ⊢ typed_call v (v ◁ᵥ l @ function_ptr fp) vl tys T.
   Proof.
     iIntros "HT (%fn&->&He&Hfn) Htys" (Φ) "HΦ".
-    iDestruct ("HT" with "Htys") as "(%x&Hvl&HPa&Hr)".
+    iMod ("HT" with "Htys") as "(%x&Hvl&HPa&Hr)".
     iDestruct ("Hfn" $! x) as "[>%Hl #Hfn]".
     iAssert ⌜Forall2 has_layout_val vl (f_args fn).*2⌝%I as %Hall. {
       iClear "Hfn HPa Hr".
@@ -150,6 +150,7 @@ Section function.
       iDestruct (ty_size_eq with "Hv") as %?; [done|].
       iPureIntro. constructor => //.
     }
+    iApply wp_fupd.
     iApply (wp_call with "He") => //. { by apply val_to_of_loc. }
     iIntros "!#" (lsa lsv Hly) "Ha Hv".
     iDestruct (big_sepL2_length with "Ha") as %Hlen1.
@@ -180,25 +181,25 @@ Section function.
     - iIntros (v). iDestruct 1 as (x') "[Hv [Hls HPr]]".
       iDestruct (big_sepL2_app_inv with "Hls") as "[$ $]".
       { rewrite Hlen1 Hlen3. left. by eapply Forall2_length. }
-      iDestruct ("HPr" with "Hv") as (?) "[Hty [HR _]]".
+      iMod ("HPr" with "Hv") as (?) "[Hty [HR _]]". iModIntro.
       iApply ("HΦ" with "Hty").
       by iApply ("Hr" with "HR").
   Qed.
   Definition type_call_fnptr_inst := [instance type_call_fnptr].
   Global Existing Instance type_call_fnptr_inst.
 
-  Lemma subsume_fnptr_val_ex B v l1 l2 (fnty1 : A → fn_params) fnty2 `{!∀ x, ContainsEx (fnty2 x)} T:
+  Lemma subsume_fnptr_val_ex B M v l1 l2 (fnty1 : A → fn_params) fnty2 `{!∀ x, ContainsEx (fnty2 x)} T:
     (∃ x, ⌜l1 = l2 x⌝ ∗ ⌜fnty1 = fnty2 x⌝ ∗ T x)
-    ⊢ subsume (v ◁ᵥ l1 @ function_ptr fnty1) (λ x : B, v ◁ᵥ (l2 x) @ function_ptr (fnty2 x)) T.
-  Proof. iIntros "(%&->&->&?) ?". iExists _. iFrame. Qed.
+    ⊢ subsume (v ◁ᵥ l1 @ function_ptr fnty1) M (λ x : B, v ◁ᵥ (l2 x) @ function_ptr (fnty2 x)) T.
+  Proof. iIntros "(%&->&->&?) ? !>". iExists _. iFrame. Qed.
   Definition subsume_fnptr_val_ex_inst := [instance subsume_fnptr_val_ex].
   Global Existing Instance subsume_fnptr_val_ex_inst | 5.
 
   (* TODO: split this in an ex and no_ex variant as for values *)
-  Lemma subsume_fnptr_loc B l l1 l2  (fnty1 : A → fn_params) fnty2 T:
+  Lemma subsume_fnptr_loc B M l l1 l2  (fnty1 : A → fn_params) fnty2 T:
     (∃ x, ⌜l1 = l2 x⌝ ∗ ⌜fnty1 = fnty2 x⌝ ∗ T x)
-      ⊢ subsume (l ◁ₗ l1 @ function_ptr fnty1) (λ x : B, l ◁ₗ (l2 x)  @ function_ptr (fnty2 x))  T .
-  Proof. iIntros "(%&->&->&?) ?". iExists _. iFrame. Qed.
+      ⊢ subsume (l ◁ₗ l1 @ function_ptr fnty1) M (λ x : B, l ◁ₗ (l2 x)  @ function_ptr (fnty2 x))  T .
+  Proof. iIntros "(%&->&->&?) ? !>". iExists _. iFrame. Qed.
   Definition subsume_fnptr_loc_inst := [instance subsume_fnptr_loc].
   Global Existing Instance subsume_fnptr_loc_inst | 5.
 End function.
@@ -208,9 +209,9 @@ Arguments fn_ret_prop _ _ _ /.
 Section function_extra.
   Context `{!typeG Σ}.
 
-  Lemma subsume_fnptr_no_ex A A1 A2 v l1 l2 (fnty1 : A1 → fn_params) (fnty2 : A2 → fn_params)
+  Lemma subsume_fnptr_no_ex A A1 A2 M v l1 l2 (fnty1 : A1 → fn_params) (fnty2 : A2 → fn_params)
     `{!Inhabited A1} T:
-    subsume (v ◁ᵥ l1 @ function_ptr fnty1) (λ x : A, v ◁ᵥ (l2 x) @ function_ptr fnty2) T :-
+    subsume (v ◁ᵥ l1 @ function_ptr fnty1) M (λ x : A, v ◁ᵥ (l2 x) @ function_ptr fnty2) T :-
       and:
       | drop_spatial;
         ∀ a2,
@@ -238,7 +239,7 @@ Section function_extra.
       | ∃ x, exhale ⌜l1 = l2 x⌝; return T x.
   Proof.
     iIntros "(#Hsub & (%x & -> & HT))".
-    iIntros "(%fn & -> & #Hfn & #Htyp_f1)".
+    iIntros "(%fn & -> & #Hfn & #Htyp_f1) !>".
     iExists x; iFrame. unfold function_ptr; simpl_type.
     iExists fn; iSplit => //; iFrame "#"; iNext.
     rewrite /typed_function. iIntros (a2).
@@ -271,7 +272,7 @@ Section function_extra.
     iDestruct (iterate_elim0 INV with "Hsub [] [#]") as "[Hinv [Hpre1 Hsub]]"; unfold INV; clear INV.
     { by rewrite !take_0. } {
       iIntros "!>" (i ? ? (?&?&?&Hvs&?)%lookup_zip_with_Some); simplify_eq/=.
-      iIntros "Hinv [? $]". rewrite lookup_take in Hvs.
+      iIntros "Hinv [? $]". rewrite lookup_take_lt in Hvs.
       2: { rewrite -Hlen. by apply: lookup_lt_Some. }
       erewrite take_S_r; [|done]. erewrite take_S_r; [|done].
       rewrite big_sepL2_snoc. iFrame.
@@ -283,7 +284,7 @@ Section function_extra.
     iSpecialize ("Htyp_f1" with "[$]").
     iApply (introduce_typed_stmt_wand with "Htyp_f1").
     iIntros (v ty) "Hret1 Hty" => /=.
-    iDestruct ("Hret1" with "Hty") as "(%ret1 & Hty1 & Hpost1 & _)".
+    iMod ("Hret1" with "Hty") as "(%ret1 & Hty1 & Hpost1 & _)". iModIntro.
     iDestruct ("Hsub" $! ret1 v with "Hty1 Hpost1") as "(%ret2 & Hty2 & Hpost2 & _)".
     iExists ret2; iFrame.
   Qed.

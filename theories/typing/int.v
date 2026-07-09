@@ -180,7 +180,7 @@ Section programs.
       (li_trace (TraceIfInt n, false) T2)
     ⊢ typed_if (IntOp it) v (v ◁ᵥ n @ int it) T1 T2.
   Proof.
-    iIntros "Hs %Hb" => /=.
+    iIntros "Hs %Hb !>" => /=.
     iExists n. iSplit; first done.
     case_bool_decide.
     - iDestruct "Hs" as "[Hs _]". by iApply "Hs".
@@ -212,7 +212,7 @@ Section programs.
     { iDestruct "HT" as "[_ HT]". iApply "HT". iPureIntro.
       rewrite map_to_list_empty. set_solver. }
     rewrite big_andM_insert //. destruct (decide (n = i)); subst.
-    - rewrite lookup_insert. iDestruct "HT" as "[[HT _] _]". by iApply "HT".
+    - rewrite lookup_insert_eq. iDestruct "HT" as "[[HT _] _]". by iApply "HT".
     - rewrite lookup_insert_ne//. iApply "IH". iSplit; first by iDestruct "HT" as "[[_ HT] _]".
       iIntros (Hn). iDestruct "HT" as "[_ HT]". iApply "HT". iPureIntro.
       rewrite map_to_list_insert //. set_solver.
@@ -310,24 +310,34 @@ Section programs.
   Qed.
 
   (*** int <-> bool *)
-  Lemma subsume_int_boolean_place A l β n b it T:
+  Lemma subsume_int_boolean_place M A l β n b it T:
     (∃ x, ⌜n = bool_to_Z (b x)⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} n @ int it) (λ x : A, l ◁ₗ{β} (b x) @ boolean it) T.
+    ⊢ subsume (l ◁ₗ{β} n @ int it) M (λ x : A, l ◁ₗ{β} (b x) @ boolean it) T.
   Proof.
-    iIntros "[% [-> ?]] Hint". iExists _. iFrame. iDestruct "Hint" as (???) "?".
+    iIntros "[% [-> ?]] Hint !>". iExists _. iFrame. iDestruct "Hint" as (???) "?".
     iExists _, _. iFrame. iSplit; first done. iSplit; last done. by destruct b.
   Qed.
   Definition subsume_int_boolean_place_inst := [instance subsume_int_boolean_place].
   Global Existing Instance subsume_int_boolean_place_inst.
 
-  Lemma subsume_int_boolean_val A v n b it T:
+  Lemma subsume_int_boolean_val A M v n b it T:
     (∃ x, ⌜n = bool_to_Z (b x)⌝ ∗ T x)
-    ⊢ subsume (v ◁ᵥ n @ int it) (λ x : A, v ◁ᵥ (b x) @ boolean it) T.
+    ⊢ subsume (v ◁ᵥ n @ int it) M (λ x : A, v ◁ᵥ (b x) @ boolean it) T.
   Proof.
-    iIntros "[%x [-> ?]] %". iExists _. iFrame. unfold boolean; simpl_type.
+    iIntros "[%x [-> ?]] % !>". iExists _. iFrame. unfold boolean; simpl_type.
     iExists (bool_to_Z (b x)). iSplit; first done. by destruct b. Qed.
   Definition subsume_int_boolean_val_inst := [instance subsume_int_boolean_val].
   Global Existing Instance subsume_int_boolean_val_inst.
+
+  Lemma subsume_strict_bool_int_val A M v (b : bool) i it T:
+    (∃ x, ⌜ (i x) = bool_to_Z b ⌝ ∗ T x)
+    ⊢ subsume (v ◁ᵥ b @ boolean it) M (λ x : A, v ◁ᵥ (i x) @ int it) T.
+  Proof.
+    unfold boolean; simpl_type. iIntros "[%x [% ?]] [% [%%]] !>". iExists _.
+    iFrame. unfold int; simpl_type. destruct b; by rewrite H0 H1 H.
+  Qed.
+  Definition subsume_strict_bool_int_val_inst := [instance subsume_strict_bool_int_val].
+  Global Existing Instance subsume_strict_bool_int_val_inst.
 
   Lemma type_binop_boolean_int it1 it2 it3 it4 v1 b1 v2 n2 op T:
     typed_bin_op v1 (v1 ◁ᵥ (bool_to_Z b1) @ int it1) v2 (v2 ◁ᵥ n2 @ int it2) op (IntOp it3) (IntOp it4) T
@@ -350,6 +360,17 @@ Section programs.
   Qed.
   Definition type_binop_int_boolean_inst := [instance type_binop_int_boolean].
   Global Existing Instance type_binop_int_boolean_inst.
+
+  Lemma type_binop_boolean_boolean op it1 it2 it3 it4 v1 b1 v2 b2 T:
+    typed_bin_op v1 (v1 ◁ᵥ (bool_to_Z b1) @ int it1) v2 (v2 ◁ᵥ (bool_to_Z b2) @ int it2) op (IntOp it3) (IntOp it4) T
+    ⊢ typed_bin_op v1 (v1 ◁ᵥ b1 @ boolean it1) v2 (v2 ◁ᵥ b2 @ boolean it2) op (IntOp it3) (IntOp it4) T.
+  Proof.
+    iIntros "HT H1 H2". unfold boolean; simpl_type.
+    iDestruct "H1" as "(%&%H11&%H12)". iDestruct "H2" as "(%&%H21&%H22)".
+    iApply "HT"; subst; destruct b1, b2; simpl in *; done.
+  Qed.
+  Definition type_binop_boolean_boolean_sub_inst := [instance type_binop_boolean_boolean (SubOp)].
+  Global Existing Instance type_binop_boolean_boolean_sub_inst.
 
   Lemma type_cast_int_builtin_boolean n it v T:
     (∀ v, T v ((bool_decide (n ≠ 0)) @ builtin_boolean))

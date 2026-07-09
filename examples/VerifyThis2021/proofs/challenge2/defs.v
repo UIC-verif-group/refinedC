@@ -18,12 +18,18 @@ Definition node_data {A} (t : tree A) : option (tree A * A * tree A) :=
   end.
 
 Global Instance simpl_node_data_None A (t : tree A) :
-  SimplBothRel (=) (node_data t) None (t = Leaf).
+  SimplBoth (node_data t = None) (t = Leaf).
 Proof. split; destruct t; naive_solver. Qed.
+Definition simpl_node_data_None_sym A (t : tree A) :=
+  simpl_both_sym (=) (simpl_node_data_None A t).
+Global Existing Instance simpl_node_data_None_sym.
 
 Global Instance simpl_node_data_Some A (t : tree A) x y z :
-  SimplBothRel (=) (node_data t) (Some (x, y, z)) (t = Node x y z).
+  SimplBoth (node_data t = Some (x, y, z)) (t = Node x y z).
 Proof. split; destruct t; naive_solver. Qed.
+Definition simpl_node_data_Some_sym A (t : tree A) x y z :=
+  simpl_both_sym (=) (simpl_node_data_Some A t x y z).
+Global Existing Instance simpl_node_data_Some_sym.
 
 Fixpoint tree_member (key : Z) (t : tree Z) : bool :=
   match t with
@@ -189,9 +195,9 @@ Qed.
 Global Instance simpl_tree_list_eq_aux_0_and {A : Type} (l l_rest : list A) (t : tree A):
   SimplAnd (list_tree_eq_aux 0 l t l_rest) (t = Leaf ∧ l_rest = l).
 Proof.
-  split.
-  - move => [-> ->]. constructor.
+  constructor. split.
   - move => H. by inversion H.
+  - move => [-> ->]. constructor.
 Qed.
 
 Lemma list_tree_eq_aux_Node {A : Type} (n : nat) (l l' l_rest : list A) (tr_l tr_r : tree A) (v : A):
@@ -214,10 +220,8 @@ Lemma list_tree_eq_aux_Node_Z {A : Type} (n : nat) (l l' l_rest : list A) (tr_l 
   list_tree_eq_aux (n - Z.to_nat (n `quot` 2) - Z.to_nat 1) l' tr_r l_rest →
   list_tree_eq_aux n l (Node tr_l v tr_r) l_rest.
 Proof.
-  assert (n - Z.to_nat (n `quot` 2)%Z - Z.to_nat 1 = n - n `div` 2 - 1)%nat as ->.
-  { rewrite Z.quot_div_nonneg ?Z2Nat.inj_div; try lia. repeat f_equal. lia. }
-  assert (Z.to_nat (n `quot` 2) = n `div` 2)%nat as ->.
-  { rewrite Z.quot_div_nonneg ?Z2Nat.inj_div; try lia. f_equal. lia. }
+  assert (n - Z.to_nat (n `quot` 2)%Z - Z.to_nat 1 = n - n `div` 2 - 1)%nat as -> by lia.
+  assert (Z.to_nat (n `quot` 2) = n `div` 2)%nat as -> by lia.
   by apply list_tree_eq_aux_Node.
 Qed.
 

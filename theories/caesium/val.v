@@ -28,6 +28,7 @@ Bind Scope val_scope with val.
 
 (** void is the empty list *)
 Definition VOID : val := [].
+Global Typeclasses Opaque VOID.
 
 (** Predicate stating that value [v] has the right size according to layout [ly]. *)
 Definition has_layout_val (v : val) (ly : layout) : Prop := length v = ly.(ly_size).
@@ -170,6 +171,7 @@ Definition val_of_Z (z : Z) (it : int_type) (p : option alloc_id) : option val :
 
 Definition i2v (n : Z) (it : int_type) : val :=
   default (replicate (bytes_per_int it) MPoison) (val_of_Z n it None).
+Global Typeclasses Opaque i2v.
 
 Lemma val_of_Z_go_length z sz p:
   length (val_of_Z_go z sz p) = sz.

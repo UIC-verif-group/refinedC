@@ -114,6 +114,7 @@ and type_expr =
   | Ty_exists of pattern * coq_expr option * type_expr
   | Ty_constr of type_expr * constr
   | Ty_params of ident * type_expr_arg list
+  | Ty_list   of type_expr list
   | Ty_Coq    of coq_expr
 
 and type_expr_arg =
@@ -209,6 +210,8 @@ and parser type_expr @(p : [`Atom | `Cstr | `Full]) =
       when p >= `Cstr -> Ty_constr(ty,c)
   | "(" ty:(type_expr `Full) ")"
       when p >= `Atom -> ty
+  | "[" tys:type_elems  "]"
+       when p >= `Atom -> Ty_list(tys)
 
 and parser type_expr_arg =
   | ty:(type_expr `Full)
@@ -219,6 +222,10 @@ and parser type_expr_arg =
 and parser type_args =
   | EMPTY                                   -> []
   | e:type_expr_arg es:{"," type_expr_arg}* -> e::es
+
+and parser type_elems =
+  | EMPTY                                           -> []
+  | e:(type_expr `Full) es:{";" (type_expr `Full)}* -> e::es
 
 let type_expr = type_expr `Full
 
@@ -275,6 +282,12 @@ let parser annot_global : type_expr Earley.grammar =
   | ty:type_expr
 
 (** {4 Annotations on functions} *)
+
+let parser annot_context : (ident * coq_expr) Earley.grammar =
+  | id:ident ":" s:coq_expr
+
+let parser annot_instantiate : (ident * coq_expr) Earley.grammar =
+  | id:ident ":=" s:coq_expr
 
 let parser annot_arg : type_expr Earley.grammar =
   | ty:type_expr
@@ -348,6 +361,8 @@ let parser typedef : typedef Earley.grammar =
 (** {3 Parsing of attributes} *)
 
 type annot =
+  | Annot_context      of (ident * coq_expr) list
+  | Annot_instantiate  of (ident * coq_expr) list
   | Annot_parameters   of (ident * coq_expr) list
   | Annot_refined_by   of (ident * coq_expr) list
   | Annot_typedef      of (ident * type_expr)
@@ -462,6 +477,8 @@ let parse_attr : rc_attr -> annot = fun attr ->
   in
 
   match id.elt with
+  | "context"      -> many_args annot_context (fun l -> Annot_context(l))
+  | "instantiate"  -> many_args annot_instantiate (fun l -> Annot_instantiate(l))
   | "parameters"   -> many_args annot_parameter (fun l -> Annot_parameters(l))
   | "refined_by"   -> many_args annot_refine (fun l -> Annot_refined_by(l))
   | "typedef"      -> single_arg annot_typedef (fun e -> Annot_typedef(e))
@@ -503,16 +520,20 @@ type proof_kind =
   | Proof_inlined
 
 type function_annot =
-  { fa_parameters : (ident * coq_expr) list
-  ; fa_args       : type_expr list
-  ; fa_returns    : type_expr
-  ; fa_exists     : (ident * coq_expr) list
-  ; fa_requires   : constr list
-  ; fa_ensures    : constr list
-  ; fa_tactics    : string list
-  ; fa_proof_kind : proof_kind }
+  { fa_parameters  : (ident * coq_expr) list
+  ; fa_context     : (ident * coq_expr) list
+  ; fa_instantiations : (ident * coq_expr) list
+  ; fa_args        : type_expr list
+  ; fa_returns     : type_expr
+  ; fa_exists      : (ident * coq_expr) list
+  ; fa_requires    : constr list
+  ; fa_ensures     : constr list
+  ; fa_tactics     : string list
+  ; fa_proof_kind  : proof_kind }
 
 let function_annot : rc_attr list -> function_annot = fun attrs ->
+  let context = ref [] in
+  let instantiate = ref [] in
   let parameters = ref [] in
   let args = ref [] in
   let exists = ref [] in
@@ -544,6 +565,8 @@ let function_annot : rc_attr list -> function_annot = fun attrs ->
         if !proof <> Proof_normal then error "proof mode already specified";
         proof := Proof_manual(cfg)
     | (Annot_parameters(l), _   ) -> parameters := !parameters @ l
+    | (Annot_context(l)   , _   ) -> context := !context @ l
+    | (Annot_instantiate(l), _  ) -> instantiate := !instantiate @ l
     | (Annot_args(l)      , _   ) -> args := !args @ l
     | (Annot_returns(ty)  , None) -> returns := Some(ty)
     | (Annot_returns(_)   , _   ) -> error "already specified"
@@ -564,6 +587,8 @@ let function_annot : rc_attr list -> function_annot = fun attrs ->
   if !nb_attrs = 0 then proof := Proof_skipped;
 
   { fa_parameters = !parameters
+  ; fa_context    = !context
+  ; fa_instantiations = !instantiate
   ; fa_args       = !args
   ; fa_returns    = Option.get (Ty_params("void", [])) !returns
   ; fa_exists     = !exists

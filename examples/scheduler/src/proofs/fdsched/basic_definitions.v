@@ -30,10 +30,10 @@ Section ReadIndex.
     RelatedTo (Σ := Σ) (λ x : A,curr_read_index (t x)) :=
     {|rt_fic := FindDirect (λ t, curr_read_index t)%I |}.
 
-  Lemma subsume_curr_read_index B t t1 G:
+  Lemma subsume_curr_read_index B M t t1 G:
     (∃ x, ⌜t = t1 x⌝ ∗ G x)
-    ⊢ subsume (Σ := Σ) (curr_read_index t) (λ x : B, curr_read_index (t1 x)) G.
-  Proof. iIntros "(%x & -> & ?) Hcurr". iExists _. iFrame. Qed.
+    ⊢ subsume (Σ := Σ) (curr_read_index t) M (λ x : B, curr_read_index (t1 x)) G.
+  Proof. iIntros "(%x & -> & ?) Hcurr !>". iExists _. iFrame. Qed.
   Definition subsume_curr_read_index_inst := [instance subsume_curr_read_index].
   Global Existing Instance subsume_curr_read_index_inst.
 
@@ -49,3 +49,5 @@ Section ReadSpecs.
      from_option get_packet_data inhabitant ID.
 
 End ReadSpecs.
+
+Global Opaque get_packet_data.

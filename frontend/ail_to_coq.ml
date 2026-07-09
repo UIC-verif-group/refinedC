@@ -718,6 +718,8 @@ let rec translate_expr : bool -> op_type option -> ail_expr -> expr =
         translate e
     | AilEgcc_statement _          ->
         Panic.panic loc "Not implemented GCC statement expr." (* TODO *)
+    | AilEinvalid _ ->
+        Panic.panic loc "Not implemented invalid expr." (* TODO *)
   in
   match (goal_ty, !res_ty) with
   | (None         , _           )

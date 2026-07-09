@@ -44,6 +44,10 @@ Section type.
     iModIntro. iExists γ, ∅. by iFrame.
   Qed.
 
+  Global Instance related_to_lock_token A γ (l : A → list string) :
+    RelatedTo (λ y : A, lock_token γ (l y)) :=
+    {| rt_fic := FindDirect (lock_token γ) |}.
+
 
   Program Definition tylocked_ex {A} (γ : lock_id) (n : string) (x : A) (ty : A → type) : type := {|
     ty_has_op_type ot mt := (ty x).(ty_has_op_type) ot mt;
@@ -64,24 +68,24 @@ Section type.
   Next Obligation. iIntros (A γ n x ty ot mt l ? ?). by iApply ty_ref. Qed.
   Next Obligation. iIntros (A γ n x ty v ot mt st ?) "Hl". by iApply ty_memcast_compat. Qed.
 
-  Lemma tylocked_simplify_hyp_place A γ n x (ty : A → type) l T:
-    (l ◁ₗ ty x -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ tylocked_ex γ n x ty) T.
+  Lemma tylocked_simplify_hyp_place A γ n x (ty : A → type) l M T:
+    (l ◁ₗ ty x -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ tylocked_ex γ n x ty) M T.
   Proof. done. Qed.
   Definition tylocked_simplify_hyp_place_inst := [instance tylocked_simplify_hyp_place with 0%N].
   Global Existing Instance tylocked_simplify_hyp_place_inst.
 
-  Lemma tylocked_simplify_goal_place A γ n x (ty : A → type) l T:
+  Lemma tylocked_simplify_goal_place A γ n x (ty : A → type) l M T:
     l ◁ₗ ty x ∗ T
-    ⊢ simplify_goal (l ◁ₗ tylocked_ex γ n x ty) T.
-  Proof. iIntros "[$ $]". Qed.
+    ⊢ simplify_goal M (l ◁ₗ tylocked_ex γ n x ty) T.
+  Proof. by iIntros "[$ $] !>". Qed.
   Definition tylocked_simplify_goal_place_inst := [instance tylocked_simplify_goal_place with 0%N].
   Global Existing Instance tylocked_simplify_goal_place_inst.
 
-  Lemma tylocked_subsume A B γ n x1 x2 (ty : A → type) l β T:
+  Lemma tylocked_subsume M A B γ n x1 x2 (ty : A → type) l β T:
     (∃ y, ⌜β = Own → x1 = x2 y⌝ ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} tylocked_ex γ n x1 ty) (λ y : B, l ◁ₗ{β} tylocked_ex γ n (x2 y) ty) T.
-  Proof. iIntros "[% [% ?]] Hl". iExists _. iFrame. by destruct β; naive_solver. Qed.
+    ⊢ subsume (l ◁ₗ{β} tylocked_ex γ n x1 ty) M (λ y : B, l ◁ₗ{β} tylocked_ex γ n (x2 y) ty) T.
+  Proof. iIntros "[% [% ?]] Hl !>". iExists _. iFrame. by destruct β; naive_solver. Qed.
   Definition tylocked_subsume_inst := [instance tylocked_subsume].
   Global Existing Instance tylocked_subsume_inst | 10.
 
@@ -157,25 +161,29 @@ Section type.
   Definition annot_unlock_inst := [instance annot_unlock].
   Global Existing Instance annot_unlock_inst.
 
+  (* TODO: Remove this? *)
   Class WithLockId (ty : type) (γ : lock_id) := with_lock_id : True.
 
-  Lemma type_annot_lock (l : loc) β ty γ `{!WithLockId ty γ} T:
-    (find_in_context (FindDirect (lock_token γ)) (λ s : list string, foldr (λ t T,
-        find_in_context (FindDirect (λ '(existT A (l2, ty)), tylocked_ex_token (A:=A) γ t l2 β ty)) (λ '(existT A (l2, ty)), ∃ x,
-          l2 ◁ₗ ty x ∗ (l2 ◁ₗ{β} tylocked_ex γ t x ty -∗ T))) (l ◁ₗ{β} ty -∗ lock_token γ [] -∗ T) s))
-    ⊢ typed_annot_expr 1%nat LockA l (l ◁ₗ{β} ty) T.
+  Lemma type_subsume_lock_token A γ s T:
+    subsume (lock_token γ s) (={⊤}=) (λ _ : A, lock_token γ []) T :-
+      iterate: s {{t T,
+        '(existT A (l2, β, ty)) ← find_in_context (FindDirect (λ '(existT A (l2, β, ty)),
+                                 tylocked_ex_token (A:=A) γ t l2 β ty));
+        ∃ x, exhale (l2 ◁ₗ ty x); inhale (l2 ◁ₗ{β} tylocked_ex γ t x ty); return T}};
+      ∃ x, return T x.
   Proof.
-    iIntros "H Hty".
-    iDestruct "H" as (s) "[Htok Hs]".
-    iApply step_fupd_intro => //. iModIntro.
-    iInduction s as [|t s] "IH" => /=. 1: by iApply ("Hs" with "Hty Htok").
-    iDestruct "Hs" as ([A [l2 ty2]]) "[Hlt H]".
+    iIntros "H Hs".
+    iMod (iterate_elim0_mod (λ i, lock_token γ (drop i s)) with "H [Hs] [#]") as "[Hl ?]".
+    { by rewrite !drop_0. } 2: { iModIntro. rewrite drop_all. by iFrame. }
+    iIntros "!>" (i t T2 Hi) "Htok".
+    iDestruct 1 as ([B [[l2 β] ty2]]) "[Hlt H]".
     iDestruct "H" as (x) "[Hl HT]".
+    erewrite drop_S => //.
     iMod (locked_close with "Hlt Hl Htok") as "[Htok Hl]" => //.
-    iApply ("IH" with "Htok [HT Hl] Hty"). by iApply "HT".
+    iModIntro. iFrame. by iApply "HT".
   Qed.
-  Definition type_annot_lock_inst := [instance type_annot_lock].
-  Global Existing Instance type_annot_lock_inst.
+  Definition type_subsume_lock_token_inst := [instance type_subsume_lock_token].
+  Global Existing Instance type_subsume_lock_token_inst.
 End type.
 
 (* TODO: Do something stronger, e.g. sealing? *)

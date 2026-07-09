@@ -1,5 +1,5 @@
-(coq.theory
+(rocq.theory
  (name lithium.tutorial)
  (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (synopsis "Lithium tutorial")
- (theories lithium))
+ (theories Stdlib stdpp iris RecordUpdate Ltac2 lithium))

@@ -116,35 +116,35 @@ Section optional.
     iLeft. iFrame. iApply (@simple_subsume_val with "P H").
   Qed.
 
-  Lemma subsume_optional_optty_ref A b ty optty l β T:
-    (∃ x, ⌜¬ (b x)⌝ ∗ T x) ⊢ subsume (l ◁ₗ{β} optty) (λ x : A, l ◁ₗ{β} (b x) @ optional (ty x) optty) T.
-  Proof. iIntros "[% [Hb ?]] Hl". iExists _. iFrame. iRight. by iFrame. Qed.
+  Lemma subsume_optional_optty_ref A M b ty optty l β T:
+    (∃ x, ⌜¬ (b x)⌝ ∗ T x) ⊢ subsume (l ◁ₗ{β} optty) M (λ x : A, l ◁ₗ{β} (b x) @ optional (ty x) optty) T.
+  Proof. iIntros "[% [Hb ?]] Hl !>". iExists _. iFrame. iRight. by iFrame. Qed.
   Definition subsume_optional_optty_ref_inst := [instance subsume_optional_optty_ref].
   Global Existing Instance subsume_optional_optty_ref_inst.
 
-  Lemma subsume_optional_ty_ref A b (ty : A → type) ty' optty l β
+  Lemma subsume_optional_ty_ref A M b (ty : A → type) ty' optty l β
     `{!∀ x, OptionableAgree (ty x) ty'} T:
-    (l ◁ₗ{β} ty' -∗ ∃ x, l ◁ₗ{β} ty x ∗ ⌜b x⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} ty') (λ x : A, l ◁ₗ{β} (b x) @ optional (ty x) (optty x)) T.
+    (l ◁ₗ{β} ty' -∗ ‖M‖ ∃ x, l ◁ₗ{β} ty x ∗ ⌜b x⌝ ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} ty') M (λ x : A, l ◁ₗ{β} (b x) @ optional (ty x) (optty x)) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (?) "[? [% ?]]".
-    iExists _. iFrame. iLeft. by iFrame.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?) "[? [% ?]]".
+    iModIntro. iFrame. iLeft. by iFrame.
   Qed.
   Definition subsume_optional_ty_ref_inst := [instance subsume_optional_ty_ref].
   Global Existing Instance subsume_optional_ty_ref_inst.
 
-  Lemma subsume_optional_val_optty_ref A b ty optty v T:
-    (∃ x, ⌜¬ b x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ optty) (λ x : A, v ◁ᵥ (b x) @ optional (ty x) optty) T.
-  Proof. iIntros "[% [Hb ?]] Hl". iExists _. iFrame. iRight. by iFrame. Qed.
+  Lemma subsume_optional_val_optty_ref A M b ty optty v T:
+    (∃ x, ⌜¬ b x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ optty) M (λ x : A, v ◁ᵥ (b x) @ optional (ty x) optty) T.
+  Proof. iIntros "[% [Hb ?]] Hl !>". iExists _. iFrame. iRight. by iFrame. Qed.
   Definition subsume_optional_val_optty_ref_inst := [instance subsume_optional_val_optty_ref].
   Global Existing Instance subsume_optional_val_optty_ref_inst.
 
-  Lemma subsume_optional_val_ty_ref A b ty ty' optty v `{!∀ x, OptionableAgree (ty x) ty'} T:
-    (v ◁ᵥ ty' -∗ ∃ x, v ◁ᵥ ty x ∗ ⌜b x⌝ ∗ T x)
-    ⊢ subsume (v ◁ᵥ ty') (λ x : A, v ◁ᵥ (b x) @ optional (ty x) (optty x)) T.
+  Lemma subsume_optional_val_ty_ref A M b ty ty' optty v `{!∀ x, OptionableAgree (ty x) ty'} T:
+    (v ◁ᵥ ty' -∗ ‖M‖ ∃ x, v ◁ᵥ ty x ∗ ⌜b x⌝ ∗ T x)
+    ⊢ subsume (v ◁ᵥ ty') M (λ x : A, v ◁ᵥ (b x) @ optional (ty x) (optty x)) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (?) "[? [% ?]]".
-    iExists _. iFrame. iLeft. by iFrame.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?) "[? [% ?]]".
+    iModIntro. iFrame. iLeft. by iFrame.
   Qed.
   Definition subsume_optional_val_ty_ref_inst := [instance subsume_optional_val_ty_ref].
   Global Existing Instance subsume_optional_val_ty_ref_inst.
@@ -315,67 +315,67 @@ Section optionalO.
   Qed.
 
   (* TODO: Should we have more instances like this? E.g. for the goal? *)
-  Lemma simpl_hyp_optionalO_Some A (ty : A → type) optty l β x T:
-    (l ◁ₗ{β} ty x -∗ T) ⊢ simplify_hyp (l ◁ₗ{β} Some x @ optionalO ty optty) T.
+  Lemma simpl_hyp_optionalO_Some A (ty : A → type) optty l β x M T:
+    (l ◁ₗ{β} ty x -∗ ‖M‖ T) ⊢ simplify_hyp (l ◁ₗ{β} Some x @ optionalO ty optty) M T.
   Proof. iIntros "HT Hl". by iApply "HT". Qed.
   Definition simpl_hyp_optionalO_Some_inst := [instance simpl_hyp_optionalO_Some with 0%N].
   Global Existing Instance simpl_hyp_optionalO_Some_inst.
-  Lemma simpl_hyp_optionalO_None A (ty : A → type) optty l β T:
-    (l ◁ₗ{β} optty -∗ T) ⊢ simplify_hyp (l ◁ₗ{β} None @ optionalO ty optty) T.
+  Lemma simpl_hyp_optionalO_None A (ty : A → type) optty l β M T:
+    (l ◁ₗ{β} optty -∗ ‖M‖ T) ⊢ simplify_hyp (l ◁ₗ{β} None @ optionalO ty optty) M T.
   Proof. iIntros "HT Hl". by iApply "HT". Qed.
   Definition simpl_hyp_optionalO_None_inst := [instance simpl_hyp_optionalO_None with 0%N].
   Global Existing Instance simpl_hyp_optionalO_None_inst.
-  Lemma simpl_hyp_optionalO_Some_val A (ty : A → type) optty v x T:
-    (v ◁ᵥ ty x -∗ T) ⊢ simplify_hyp (v ◁ᵥ Some x @ optionalO ty optty) T.
+  Lemma simpl_hyp_optionalO_Some_val A (ty : A → type) optty v x M T:
+    (v ◁ᵥ ty x -∗ ‖M‖ T) ⊢ simplify_hyp (v ◁ᵥ Some x @ optionalO ty optty) M T.
   Proof. iIntros "HT Hl". by iApply "HT". Qed.
   Definition simpl_hyp_optionalO_Some_val_inst := [instance simpl_hyp_optionalO_Some_val with 0%N].
   Global Existing Instance simpl_hyp_optionalO_Some_val_inst.
-  Lemma simpl_hyp_optionalO_None_val A (ty : A → type) optty v T:
-    (v ◁ᵥ optty -∗ T) ⊢ simplify_hyp (v ◁ᵥ None @ optionalO ty optty) T.
+  Lemma simpl_hyp_optionalO_None_val A (ty : A → type) optty v M T:
+    (v ◁ᵥ optty -∗ ‖M‖ T) ⊢ simplify_hyp (v ◁ᵥ None @ optionalO ty optty) M T.
   Proof. iIntros "HT Hl". by iApply "HT". Qed.
   Definition simpl_hyp_optionalO_None_val_inst := [instance simpl_hyp_optionalO_None_val with 0%N].
   Global Existing Instance simpl_hyp_optionalO_None_val_inst.
 
-  Lemma subsume_optionalO_optty B A (ty : B → A → type) optty l β b T:
+  Lemma subsume_optionalO_optty M B A (ty : B → A → type) optty l β b T:
     (∃ x, ⌜b x = None⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} optty) (λ x : B, l ◁ₗ{β} (b x) @ optionalO (ty x) optty) T.
-  Proof. iIntros "[% [%Heq ?]] Hl". iExists _. iFrame. by rewrite Heq. Qed.
+    ⊢ subsume (l ◁ₗ{β} optty) M (λ x : B, l ◁ₗ{β} (b x) @ optionalO (ty x) optty) T.
+  Proof. iIntros "[% [%Heq ?]] Hl !>". iExists _. iFrame. by rewrite Heq. Qed.
   Definition subsume_optionalO_optty_inst := [instance subsume_optionalO_optty].
   Global Existing Instance subsume_optionalO_optty_inst.
 
-  Lemma subsume_optionalO_ty B A (ty : B → A → type) optty l β b ty'
+  Lemma subsume_optionalO_ty M B A (ty : B → A → type) optty l β b ty'
     `{!∀ x y, OptionableAgree (ty y x) ty'} T:
-    (l ◁ₗ{β} ty' -∗ ∃ y x, ⌜b y = Some x⌝ ∗ l ◁ₗ{β} ty y x ∗ T y)
-    ⊢ subsume (l ◁ₗ{β} ty') (λ y : B, l ◁ₗ{β} (b y) @ optionalO (ty y) (optty y)) T.
+    (l ◁ₗ{β} ty' -∗‖M‖ ∃ y x, ⌜b y = Some x⌝ ∗ l ◁ₗ{β} ty y x ∗ T y)
+    ⊢ subsume (l ◁ₗ{β} ty') M (λ y : B, l ◁ₗ{β} (b y) @ optionalO (ty y) (optty y)) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (?? Heq) "[??]".
-    iExists _. iFrame. by rewrite Heq.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?? Heq) "[??]".
+    iModIntro. iFrame. by rewrite Heq.
   Qed.
   Definition subsume_optionalO_ty_inst := [instance subsume_optionalO_ty].
   Global Existing Instance subsume_optionalO_ty_inst.
 
-  Lemma subsume_optionalO_optty_val B A (ty : B → A → type) optty v b T:
-    (∃ x, ⌜b x = None⌝ ∗ T x) ⊢ subsume (v ◁ᵥ optty) (λ x : B, v ◁ᵥ (b x) @ optionalO (ty x) optty) T.
-  Proof. iIntros "[% [%Heq ?]] Hl". iExists _. iFrame. by rewrite Heq. Qed.
+  Lemma subsume_optionalO_optty_val B A M (ty : B → A → type) optty v b T:
+    (∃ x, ⌜b x = None⌝ ∗ T x) ⊢ subsume (v ◁ᵥ optty) M (λ x : B, v ◁ᵥ (b x) @ optionalO (ty x) optty) T.
+  Proof. iIntros "[% [%Heq ?]] Hl !>". iExists _. iFrame. by rewrite Heq. Qed.
   Definition subsume_optionalO_optty_val_inst := [instance subsume_optionalO_optty_val].
   Global Existing Instance subsume_optionalO_optty_val_inst.
 
-  Lemma subsume_optionalO_ty_val B A (ty : B → A → type) optty v b ty'
+  Lemma subsume_optionalO_ty_val B A M (ty : B → A → type) optty v b ty'
     `{!∀ y x, OptionableAgree (ty y x) ty'} T:
-    (v ◁ᵥ ty' -∗ ∃ y x, ⌜b y = Some x⌝ ∗ v ◁ᵥ ty y x ∗ T y)
-    ⊢ subsume (v ◁ᵥ ty') (λ y : B, v ◁ᵥ (b y) @ optionalO (ty y) (optty y)) T.
+    (v ◁ᵥ ty' -∗ ‖M‖ ∃ y x, ⌜b y = Some x⌝ ∗ v ◁ᵥ ty y x ∗ T y)
+    ⊢ subsume (v ◁ᵥ ty') M (λ y : B, v ◁ᵥ (b y) @ optionalO (ty y) (optty y)) T.
   Proof.
-    iIntros "Hsub Hl". iDestruct ("Hsub" with "Hl") as (?? Heq) "[??]".
-    iExists _. iFrame. by rewrite Heq.
+    iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?? Heq) "[??]".
+    iModIntro. iFrame. by rewrite Heq.
   Qed.
   Definition subsume_optionalO_ty_val_inst := [instance subsume_optionalO_ty_val].
   Global Existing Instance subsume_optionalO_ty_val_inst.
 
-  Lemma subsume_optional_optionalO_val B ty optty b v T:
+  Lemma subsume_optional_optionalO_val B M ty optty b v T:
     (∃ x, T x) ⊢
-    subsume (v ◁ᵥ b @ optional ty optty) (λ x : B, v ◁ᵥ optionalO (λ _ : (), ty) optty) T.
+    subsume (v ◁ᵥ b @ optional ty optty) M (λ x : B, v ◁ᵥ optionalO (λ _ : (), ty) optty) T.
   Proof.
-    unfold optional; simpl_type. iIntros "[% ?] [[% ?]|[% ?]]";
+    unfold optional; simpl_type. iIntros "[% ?] [[% ?]|[% ?]] !>";
       iExists _; iFrame; [iExists (Some ())|iExists None]; iFrame.
   Qed.
   Definition subsume_optional_optionalO_val_inst := [instance subsume_optional_optionalO_val].

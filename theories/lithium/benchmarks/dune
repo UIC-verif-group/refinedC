@@ -1,6 +1,6 @@
-(coq.theory
+(rocq.theory
  (name lithium.benchmarks)
  (package coq-lithium)
  (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (synopsis "Lithium benchmarks")
- (theories lithium))
+ (theories Stdlib stdpp iris RecordUpdate Ltac2 lithium))

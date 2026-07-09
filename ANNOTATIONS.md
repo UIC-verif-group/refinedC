@@ -31,12 +31,14 @@ attached to.
 | `annot`        | Exactly one | Expressions           | Arbitrary Coq syntax                       |
 | `args`         | One or more | Functions             | `<type_expr>`                              |
 | `constraints`  | One or more | Structures, Loops     | `<constr>`                                 |
+| `context`      | One or more | Functions             | `<ident> ":" <coq_expr>`                   |
 | `ensures`      | One or more | Functions             | `<constr>`                                 |
 | `exists`       | One or more | Functions, Loops      | `<ident> ":" <coq_expr>`                   |
 | `let`          | One or more | Structures            | `<ident> {":" <coq_expr>`} "=" <coq_expr>  |
 | `field`        | Exactly one | Structure members     | `<type_expr>`                              |
 | `global`       | Exactly one | Global variables      | `<type_expr>`                              |
 | `immovable`    | None        | Structures            | N/A                                        |
+| `instantiate`  | One or more | Functions             | `<ident> ":=" <coq_expr>`                   |
 | `inv_vars`     | One or more | Loops                 | `<ident> ":" <type_expr>`                  |
 | `lemmas`       | One or more | Functions             | Argument for the Coq `apply:` tactic       |
 | `manual_proof` | Exactly one | Functions             | `<import_path> ":" <ident> "," <ident>`    |
@@ -169,6 +171,27 @@ and it specifies a constraint that should be satisfied. On a structure, such a
 constraint is checked for all expressions of the corresponding structure type.
 On a loop, a constraint is part of the loop invariant and it must hold through
 the whole loop.
+
+
+## `rc::context` and  `rc::instantiate`
+
+`rc::context` can be used to specify Rocq types which the rest of the specification
+(in particular, the types of parameters) can depend on. It should be given at least
+one argument of the following form:
+```
+<ident (as variable name)> ":" <coq_expr (as Coq type)>
+```
+It corresponds to an universally quantified variable with the given type which 
+can be referred to in types of other function annotations.
+
+`rc::instantiate` is used to instantiate the `rc::context` parameters of a function.
+Concretely, `rc::instantiate` on a function `f` sets the `rc::context` parameters of
+all functions called by `f` to the specified values. It should be given arguments of
+the following form:
+```
+<ident (as variable name)> ":=" <coq_expr (as Coq type)>
+```
+for each context variable in the called function.
 
 ## `rc::ensures`
 

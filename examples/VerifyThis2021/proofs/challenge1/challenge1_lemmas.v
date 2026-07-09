@@ -34,10 +34,10 @@ Global Hint Rewrite @firstn_cons @take_0 : simplify_list.
 (* TODO: These hints don't seem to work if there is another take where the sidecondition fails. *)
 (* Global Hint Rewrite @take_cons' @take_0' using list_lia : simplify_list. *)
 (* Global Hint Rewrite @drop_cons' @drop_0' using list_lia : simplify_list. *)
-Global Hint Rewrite @take_insert @take_insert_lt using list_lia : simplify_list.
+Global Hint Rewrite @take_insert_ge @take_insert_lt using list_lia : simplify_list.
 Global Hint Rewrite @take_app_le @take_app_ge using list_lia : simplify_list.
 Global Hint Rewrite @skipn_cons @drop_0 : simplify_list.
-Global Hint Rewrite @drop_insert_gt @drop_insert_le using list_lia : simplify_list.
+Global Hint Rewrite @drop_insert_lt @drop_insert_ge using list_lia : simplify_list.
 Global Hint Rewrite @drop_app_le @drop_app_ge using list_lia : simplify_list.
 Global Hint Rewrite @take_take @drop_drop skipn_firstn_comm : simplify_list.
 Global Hint Rewrite @lookup_cons_eq_0 @lookup_cons_ne_0 using list_lia : simplify_list.
@@ -82,7 +82,7 @@ Ltac simplify_list :=
 
 
 Global Instance simpl_and_fmap_snoc {A B} (f : A → B) l x y k `{!TCEq (x) (f y)}:
-  SimplBothRel (=) ((f <$> l) ++ [x]) k (f <$> l ++ [y] = k) | 1.
+  SimplBoth ((f <$> l) ++ [x] = k) (f <$> l ++ [y] = k) | 1.
 Proof. revert select (TCEq _ _) => /TCEq_eq ->. by rewrite fmap_snoc. Qed.
 Global Instance ge_trans : Transitive Z.ge.
 Proof. move => ??. lia. Qed.
@@ -144,8 +144,8 @@ Lemma insert_Permutation {A} i x (l : list A):
   <[i:=x]> l ≡ₚ x :: (delete i l).
 Proof.
   move => ?.
-  rewrite (delete_Permutation (<[i:=x]> l) i). 2: by apply: list_lookup_insert.
-  rewrite !delete_take_drop drop_insert_gt ?take_insert //. lia.
+  rewrite (delete_Permutation (<[i:=x]> l) i). 2: by apply: list_lookup_insert_eq.
+  rewrite !delete_take_drop drop_insert_lt ?take_insert_ge //. lia.
 Qed.
 
 Lemma exists_snoc {A} (l : list A) :
@@ -336,7 +336,7 @@ Proof. case. naive_solver. Qed.
 
 Global Instance simpl_next_start_Unsafe i1 i2 A `{!TCFastDone (next_start i2 A)}:
   SimplAndUnsafe (next_start i1 A) (i1 = i2).
-Proof. unfold TCFastDone, SimplAndUnsafe in *. naive_solver. Qed.
+Proof. constructor. unfold TCFastDone in *. naive_solver. Qed.
 
 Lemma next_start_lt i A ni niprev:
   next_start i A →
@@ -469,7 +469,7 @@ Proof.
             x0 :: take (length A - j - 2) (drop (S (j + 1)) l)
              ). {
       revert select (take _ _ !! (length _ - 1)%nat = Some _).
-      rewrite length_take length_drop length_insert lookup_take?lookup_drop ?Hl; [|lia] => Htake.
+      rewrite length_take length_drop length_insert lookup_take_lt?lookup_drop ?Hl; [|lia] => Htake.
       have ->: (length A - 1 - j = S (length A - j - 2))%nat by lia.
       erewrite drop_S => /=//. rewrite -Htake. f_equal. lia.
     }
@@ -481,7 +481,7 @@ Proof.
     have ->: ((i - s) = S (pred i - s))%nat by lia.
     erewrite take_S_r. { by rewrite rev_app_distr. }
     rewrite lookup_drop.
-    revert select (take _ _ !! 0%nat = Some _). rewrite lookup_take ?lookup_drop ?Hl; [|lia].
+    revert select (take _ _ !! 0%nat = Some _). rewrite lookup_take_lt ?lookup_drop ?Hl; [|lia].
     move => <-. f_equal. lia.
 Qed.
 
@@ -573,7 +573,7 @@ Proof.
     rewrite (delete_Permutation (_ :: drop s (<[e:=ns]> A)) (S (e - s)) ns). 2: {
       simpl. rewrite lookup_drop.
       have -> : (s + (e - s))%nat = e by lia.
-      apply list_lookup_insert. lia.
+      apply list_lookup_insert_eq. lia.
     }
     constructor => /=.
     rewrite (delete_Permutation (drop (S (s - 1)) A) (e - s) ne). 2: {
@@ -582,7 +582,7 @@ Proof.
     }
     constructor.
     rewrite !delete_drop ?length_insert; [|lia..]. f_equiv; [lia|].
-    rewrite !delete_take_drop take_insert ?drop_insert_gt; [|lia..].
+    rewrite !delete_take_drop take_insert_ge ?drop_insert_lt; [|lia..].
     do 2 f_equal; lia.
   - simpl. case_bool_decide; [lia|]. by case_bool_decide.
   - move => l3 Hl3.
@@ -599,7 +599,7 @@ Proof.
       case_bool_decide; simplify_eq.
       * move => ?.
         move => /lexico_bot. apply.
-        -- rewrite drop_insert_le; [|lia].
+        -- rewrite drop_insert_ge; [|lia].
            apply: Sorted_insert; [done|..].
            { rewrite lookup_drop. have ->: (s + (e - s))%nat = e by lia. done. }
            { lia. }
@@ -607,13 +607,13 @@ Proof.
            revert select (∀ x, _) => Hb.
            have := Hb _ _ ltac:(done). lia.
         -- apply (@Permutation.Permutation_cons_inv _ _ _ ne). rewrite Hl3.
-           rewrite drop_insert_le; [|lia].
+           rewrite drop_insert_ge; [|lia].
            erewrite <-(list_insert_id (drop s A) (e - s)) at 2. 2:{
              rewrite lookup_drop. have -> : (s + (e - s))%nat = e by lia. done.
            }
            rewrite !insert_Permutation ?length_drop; [|lia..].
            apply: perm_swap.
-      * move => /(elem_of_list_lookup_1 _ _)[nx ].
+      * move => /(list_elem_of_lookup_1 _ _)[nx ].
         rewrite lookup_drop => ? /bool_decide_unpack ?.
         revert select (∀ x, _) => Hb.
         have := Hb _ x3 ltac:(done).

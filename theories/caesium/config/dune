@@ -1,6 +1,6 @@
-(coq.theory
+(rocq.theory
  (name caesium.config)
  (package refinedc)
  (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (synopsis "Configuration of the Caesium language")
- (theories lithium stdpp iris RecordUpdate Ltac2))
+ (theories lithium Stdlib stdpp iris RecordUpdate Ltac2))

@@ -51,7 +51,7 @@ Section judgements.
   Definition typed_if (ot : op_type) (v : val) (P : iProp Σ) (T1 T2 : iProp Σ) : iProp Σ :=
     (* TODO: generalize this to PtrOp *)
     (P -∗
-       match ot with
+       |={⊤}=> match ot with
        | BoolOp   => ∃ b, ⌜val_to_bool v = Some b⌝ ∗ (if b then T1 else T2)
        | IntOp it => ∃ z, ⌜val_to_Z v it = Some z⌝ ∗ (if bool_decide (z ≠ 0) then T1 else T2)
        | PtrOp    => ∃ l, ⌜val_to_loc v  = Some l⌝ ∗
@@ -83,7 +83,7 @@ Section judgements.
 
   Definition typed_assert (ot : op_type) (v : val) (P : iProp Σ) (s : stmt) (fn : function) (ls : list loc) (R : val → type → iProp Σ) (Q : gmap label stmt) : iProp Σ :=
     (P -∗
-       match ot with
+       |={⊤}=> match ot with
        | BoolOp   => ∃ b, ⌜val_to_bool v = Some b⌝ ∗ ⌜b = true⌝ ∗ typed_stmt s fn ls R Q
        | IntOp it => ∃ z, ⌜val_to_Z v it = Some z⌝ ∗ ⌜z ≠ 0⌝ ∗ typed_stmt s fn ls R Q
        | PtrOp    => ∃ l, ⌜val_to_loc v = Some l⌝ ∗ ⌜l ≠ NULL_loc⌝ ∗ wp_if_precond l ∗ typed_stmt s fn ls R Q
@@ -248,6 +248,12 @@ Section judgements.
     iIntros (l') "HP". by iApply ("IH" with "HP HΦ").
   Qed.
 
+  Lemma place_to_wp_fupd K Φ l:
+    ((|={⊤}=> Φ l) -∗ Φ l) -∗
+    (|={⊤}=> place_to_wp K Φ l) -∗
+    place_to_wp K Φ l.
+  Proof. iIntros "?". destruct K as [|[] ?] => //=; by iIntros ">$". Qed.
+
   Fixpoint find_place_ctx (e : W.expr) : option ((list place_ectx_item → loc → iProp Σ) → iProp Σ) :=
     match e with
     | W.Loc l => Some (λ T, T [] l)
@@ -317,7 +323,7 @@ Section judgements.
   (* and ty2 are movable (which they might not be) *)
   Definition typed_place (P : list place_ectx_item) (l1 : loc) (β1 : own_state) (ty1 : type) (T : loc → own_state → type → (type → type) → (type → iProp Σ) → iProp Σ) : iProp Σ :=
     (∀ Φ, l1 ◁ₗ{β1} ty1 -∗
-       (∀ (l2 : loc) β2 ty2 typ R, l2 ◁ₗ{β2} ty2 -∗ (∀ ty', l2 ◁ₗ{β2} ty' ={⊤}=∗ l1 ◁ₗ{β1} typ ty' ∗ R ty') -∗ T l2 β2 ty2 typ R -∗ Φ l2) -∗ place_to_wp P Φ l1).
+       (∀ (l2 : loc) β2 ty2 typ R, l2 ◁ₗ{β2} ty2 -∗ (∀ ty', l2 ◁ₗ{β2} ty' ={⊤}=∗ l1 ◁ₗ{β1} typ ty' ∗ R ty') -∗ T l2 β2 ty2 typ R -∗ Φ l2) -∗ place_to_wp P (λ l, |={⊤}=> Φ l) l1).
   Class TypedPlace (P : list place_ectx_item) (l1 : loc) (β1 : own_state) (ty1 : type) : Type :=
     typed_place_proof T : iProp_to_Prop (typed_place P l1 β1 ty1 T).
 
@@ -360,21 +366,21 @@ Arguments learnalign_learn {_ _ _ _ _} _.
 Section proper.
   Context `{!typeG Σ}.
 
-  Lemma simplify_hyp_place_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) l β T:
-    (l ◁ₗ{β} ty2 -∗ T) ⊢ simplify_hyp (l◁ₗ{β} ty1) T.
+  Lemma simplify_hyp_place_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) l β M T:
+    (l ◁ₗ{β} ty2 -∗ ‖M‖ T) ⊢ simplify_hyp (l◁ₗ{β} ty1) M T.
   Proof. iIntros "HT ?". rewrite Heq. by iApply "HT". Qed.
 
-  Lemma simplify_goal_place_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) l β T:
-    l ◁ₗ{β} ty2 ∗ T ⊢ simplify_goal (l◁ₗ{β} ty1) T.
-  Proof. rewrite Heq. iIntros "$". Qed.
+  Lemma simplify_goal_place_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) l β M T:
+    (l ◁ₗ{β} ty2 ∗ T) ⊢ simplify_goal M (l◁ₗ{β} ty1) T.
+  Proof. iIntros "? !>". rewrite Heq. iFrame. Qed.
 
-  Lemma simplify_hyp_val_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) v T:
-    (v ◁ᵥ ty2 -∗ T) ⊢ simplify_hyp (v ◁ᵥ ty1) T.
+  Lemma simplify_hyp_val_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) v M T:
+    (v ◁ᵥ ty2 -∗ ‖M‖ T) ⊢ simplify_hyp (v ◁ᵥ ty1) M T.
   Proof. iIntros "HT ?". rewrite Heq. by iApply "HT". Qed.
 
-  Lemma simplify_goal_val_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) v T:
-    v ◁ᵥ ty2 ∗ T ⊢ simplify_goal (v ◁ᵥ ty1) T.
-  Proof. rewrite Heq. iIntros "$". Qed.
+  Lemma simplify_goal_val_eq ty1 ty2 (Heq : ty1 ≡@{type} ty2) v M T:
+    (v ◁ᵥ ty2 ∗ T) ⊢ simplify_goal M (v ◁ᵥ ty1) T.
+  Proof. iIntros "? !>". rewrite Heq. iFrame. Qed.
 
   Lemma typed_place_subsume' P l ty1 β T :
     (l ◁ₗ{β} ty1 -∗ ∃ ty2, l ◁ₗ{β} ty2 ∗ typed_place P l β ty2 T) ⊢ typed_place P l β ty1 T.
@@ -383,9 +389,9 @@ Section proper.
   Qed.
 
   Lemma typed_place_subsume P l ty1 ty2 β T :
-    subsume (l ◁ₗ{β} ty1) (λ _ : unit, l ◁ₗ{β} ty2) (λ _, typed_place P l β ty2 T) ⊢ typed_place P l β ty1 T.
+    subsume (l ◁ₗ{β} ty1) (-) (λ _ : unit, l ◁ₗ{β} ty2) (λ _, typed_place P l β ty2 T) ⊢ typed_place P l β ty1 T.
   Proof.
-    iIntros "Hsub". iApply typed_place_subsume'.
+    iIntros "Hsub". iApply typed_place_subsume'. rewrite /subsume lm_id_eq.
     iIntros "Hl". iExists _. iDestruct ("Hsub" with "Hl") as (_) "$".
   Qed.
 
@@ -406,7 +412,7 @@ Section proper.
     typed_if ot v P T1' T2'.
   Proof.
     iIntros "Hif HT Hv". iDestruct ("Hif" with "Hv") as "Hif".
-    destruct ot => //; iDestruct "Hif" as (z ?) "HC"; iExists z.
+    destruct ot => //; iMod "Hif" as (z ?) "HC"; iExists z; iModIntro.
     - iSplit; first done. case_match.
       + iDestruct "HT" as "[HT _]". by iApply "HT".
       + iDestruct "HT" as "[_ HT]". by iApply "HT".
@@ -438,12 +444,13 @@ Section proper.
 
   Lemma type_val_expr_mono_strong e T :
     typed_val_expr e (λ v ty,
-      ∃ ty', subsume (v ◁ᵥ ty) (λ _ : unit, v ◁ᵥ ty') (λ _, T v ty'))%I
+      ∃ ty', subsume (v ◁ᵥ ty) (-) (λ _ : unit, v ◁ᵥ ty') (λ _, T v ty'))%I
     -∗ typed_val_expr e T.
   Proof.
     iIntros "HT". iIntros (Φ) "HΦ".
     iApply "HT". iIntros (v ty) "Hv HT".
     iDestruct "HT" as (ty') "HT".
+    rewrite /subsume lm_id_eq.
     iPoseProof ("HT" with "Hv") as (?) "[Hv HT']".
     iApply ("HΦ" with "Hv HT'").
   Qed.
@@ -680,7 +687,7 @@ Section typing.
   Lemma find_in_context_type_val_or_loc_P_val_loc (lv l : loc) T:
     (∃ β ty, lv ◁ₗ{β} ty ∗ T (lv ◁ₗ{β} ty))
     ⊢ find_in_context (FindValOrLoc lv l) T.
-  Proof. iDestruct 1 as (β ty) "[Hl HT]". iExists _. by iFrame. Qed.
+  Proof. iDestruct 1 as (β ty) "[Hl HT]". iExists (_ ◁ₗ{_} _)%I. by iFrame. Qed.
   Definition find_in_context_type_val_or_loc_P_val_loc_inst :=
     [instance find_in_context_type_val_or_loc_P_val_loc with FICSyntactic].
   Global Existing Instance find_in_context_type_val_or_loc_P_val_loc_inst | 10.
@@ -737,101 +744,105 @@ Section typing.
   Global Program Instance learnalignment_none β ty : LearnAlignment β ty None | 1000.
   Next Obligation. iIntros (???) "?". done. Qed.
 
-  Lemma subsume_loc_in_bounds A ty β l (n m : nat) `{!LocInBounds ty β m} T :
-    (l ◁ₗ{β} ty -∗ ⌜n ≤ m⌝ ∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} ty) (λ x : A, loc_in_bounds l n) T.
+  Lemma subsume_loc_in_bounds A M ty β l (n m : nat) `{!LocInBounds ty β m} T :
+    (l ◁ₗ{β} ty -∗ ‖M‖ ⌜n ≤ m⌝ ∗ ∃ x, T x)
+    ⊢ subsume (l ◁ₗ{β} ty) M (λ x : A, loc_in_bounds l n) T.
   Proof.
     iIntros "HT Hl".
     iDestruct (loc_in_bounds_in_bounds with "Hl") as "#?".
-    iDestruct ("HT" with "Hl") as (??) "?". iExists _. iFrame.
+    iMod ("HT" with "Hl") as (??) "?". iModIntro. iFrame.
     iApply loc_in_bounds_shorten; last done. lia.
   Qed.
   Definition subsume_loc_in_bounds_inst := [instance subsume_loc_in_bounds].
   Global Existing Instance subsume_loc_in_bounds_inst | 10.
 
-  Lemma subsume_loc_in_bounds_evar A ty β l (n : A → nat) (m : nat)
+  Lemma subsume_loc_in_bounds_evar A M ty β l (n : A → nat) (m : nat)
     `{!LocInBounds ty β m} T :
-    (l ◁ₗ{β} ty -∗ ∃ x, ⌜n x = m⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} ty) (λ x, loc_in_bounds l (n x)) T.
+    (l ◁ₗ{β} ty -∗ ‖M‖ ∃ x, ⌜n x = m⌝ ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} ty) M (λ x, loc_in_bounds l (n x)) T.
   Proof.
     iIntros "HT Hl".
     iDestruct (loc_in_bounds_in_bounds with "Hl") as "#?".
-    iDestruct ("HT" with "Hl") as (??) "?". iExists _. iFrame.
+    iMod ("HT" with "Hl") as (??) "?". iModIntro. iFrame.
     iApply loc_in_bounds_shorten; last done. lia.
   Qed.
   Definition subsume_loc_in_bounds_evar_inst := [instance subsume_loc_in_bounds_evar].
   Global Existing Instance subsume_loc_in_bounds_evar_inst | 20.
 
-  Lemma subsume_alloc_alive_global A l T :
+  Lemma subsume_alloc_alive_global A M l T :
     (∃ x, T x)
-    ⊢ subsume (alloc_global l) (λ x : A, alloc_alive_loc l) T.
-  Proof. iIntros "[% ?] Hl". iExists _. iFrame. by iApply (alloc_global_alive). Qed.
+    ⊢ subsume (alloc_global l) M (λ x : A, alloc_alive_loc l) T.
+  Proof. iIntros "[% ?] Hl !>". iExists _. iFrame. by iApply (alloc_global_alive). Qed.
   Definition subsume_alloc_alive_global_inst := [instance subsume_alloc_alive_global].
   Global Existing Instance subsume_alloc_alive_global_inst.
 
-  Lemma subsume_alloc_alive A ty β l P `{!AllocAlive ty β P} T :
+  Lemma subsume_alloc_alive A M ty β l P `{!AllocAlive ty β P} T :
     (* You don't get l ◁ₗ{β} ty back because alloc_alive is not persistent. *)
     (P ∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} ty) (λ x : A, alloc_alive_loc l) T.
-  Proof. iIntros "[HP [% ?]] Hl". iExists _. iFrame. by iApply (alloc_alive_alive with "HP"). Qed.
+    ⊢ subsume (l ◁ₗ{β} ty) M (λ x : A, alloc_alive_loc l) T.
+  Proof. iIntros "[HP [% ?]] Hl !>". iExists _. iFrame. by iApply (alloc_alive_alive with "HP"). Qed.
   Definition subsume_alloc_alive_inst := [instance subsume_alloc_alive].
   Global Existing Instance subsume_alloc_alive_inst | 5.
 
-  Lemma subsume_alloc_alive_type_alive A ty β l `{!CheckOwnInContext (type_alive ty β)} T :
+  Lemma subsume_alloc_alive_type_alive A M ty β l `{!CheckOwnInContext (type_alive ty β)} T :
     (type_alive ty β ∗ ∃ x, T x)
-    ⊢ subsume (l ◁ₗ{β} ty) (λ x : A, alloc_alive_loc l) T.
-  Proof. iIntros "[Ha [% ?]] Hl". rewrite /type_alive. iExists _. iFrame. by iApply "Ha". Qed.
+    ⊢ subsume (l ◁ₗ{β} ty) M (λ x : A, alloc_alive_loc l) T.
+  Proof. iIntros "[Ha [% ?]] Hl !>". rewrite /type_alive. iExists _. iFrame. by iApply "Ha". Qed.
   Definition subsume_alloc_alive_type_alive_inst := [instance subsume_alloc_alive_type_alive].
   Global Existing Instance subsume_alloc_alive_type_alive_inst | 10.
 
-  Lemma simplify_goal_type_alive ty β P `{!AllocAlive ty β P} T :
+  Lemma simplify_goal_type_alive ty β P `{!AllocAlive ty β P} M T :
     □ P ∗ T
-    ⊢ simplify_goal (type_alive ty β) T.
+    ⊢ simplify_goal M (type_alive ty β) T.
   Proof.
-    iIntros "[#HP HT]". iFrame. rewrite /type_alive. iIntros "!>" (?) "Hl".
+    iIntros "[#HP HT] !>". iFrame. rewrite /type_alive. iIntros "!>" (?) "Hl".
       by iApply (alloc_alive_alive with "HP Hl").
   Qed.
   Definition simplify_goal_type_alive_inst := [instance simplify_goal_type_alive with 0%N].
   Global Existing Instance simplify_goal_type_alive_inst.
 
-  Lemma subsume_loc_in_bounds_leq A (l : loc) (n1 n2 : nat) T :
+  Lemma subsume_loc_in_bounds_leq A M (l : loc) (n1 n2 : nat) T :
     (⌜n2 ≤ n1⌝%nat ∗ ∃ x, T x)
-    ⊢ subsume (loc_in_bounds l n1) (λ x : A, loc_in_bounds l n2) T.
-  Proof. iIntros "[% [% ?]] #?". iExists _. iFrame. by iApply loc_in_bounds_shorten. Qed.
+    ⊢ subsume (loc_in_bounds l n1) M (λ x : A, loc_in_bounds l n2) T.
+  Proof. iIntros "[% [% ?]] #? !>". iExists _. iFrame. by iApply loc_in_bounds_shorten. Qed.
   Definition subsume_loc_in_bounds_leq_inst := [instance subsume_loc_in_bounds_leq].
   Global Existing Instance subsume_loc_in_bounds_leq_inst | 10.
 
-  Lemma subsume_loc_in_bounds_leq_evar A (l : loc) (n1 : nat) (n2 : A → nat) T :
+  Lemma subsume_loc_in_bounds_leq_evar A M (l : loc) (n1 : nat) (n2 : A → nat) T :
     (∃ x, ⌜n2 x = n1⌝%nat ∗ T x)
-    ⊢ subsume (loc_in_bounds l n1) (λ x, loc_in_bounds l (n2 x)) T.
-  Proof. iIntros "[% [% ?]] #?". iExists _. iFrame. iApply loc_in_bounds_shorten; [|done]. lia. Qed.
+    ⊢ subsume (loc_in_bounds l n1) M (λ x, loc_in_bounds l (n2 x)) T.
+  Proof. iIntros "[% [% ?]] #? !>". iExists _. iFrame. iApply loc_in_bounds_shorten; [|done]. lia. Qed.
   Definition subsume_loc_in_bounds_leq_evar_inst := [instance subsume_loc_in_bounds_leq_evar].
   Global Existing Instance subsume_loc_in_bounds_leq_evar_inst | 20.
 
   Lemma apply_subsume_place_true l1 β1 ty1 l2 β2 ty2:
     l1 ◁ₗ{β1} ty1 -∗
-    subsume (l1 ◁ₗ{β1} ty1) (λ _ : unit, l2 ◁ₗ{β2} ty2) (λ _, True) -∗
+    subsume (l1 ◁ₗ{β1} ty1) (-) (λ _ : unit, l2 ◁ₗ{β2} ty2) (λ _, True) -∗
     l2 ◁ₗ{β2} ty2.
-  Proof. iIntros "Hl1 Hsub". iDestruct ("Hsub" with "Hl1") as (?) "[$ _]". Qed.
+  Proof.
+    iIntros "Hl1 Hsub". rewrite /subsume lm_id_eq.
+    iDestruct ("Hsub" with "Hl1") as (?) "[$ _]".
+  Qed.
 
   Lemma apply_subsume_place l ty2 T:
     (find_in_context (FindDirect (λ '(β, ty), l◁ₗ{β}ty)) (λ '(β, ty),
-         subsume (l◁ₗ{β} ty) (λ _ : unit, l◁ₗ{β} ty2) (λ _, l◁ₗ{β}ty2 -∗ T))) -∗ T.
+         subsume (l◁ₗ{β} ty) (-) (λ _ : unit, l◁ₗ{β} ty2) (λ _, l◁ₗ{β}ty2 -∗ T))) -∗ T.
   Proof.
     iDestruct 1 as ([β ty1]) "[Hl Hsub]".
+    rewrite /subsume lm_id_eq.
     iDestruct ("Hsub" with "Hl") as (?) "[Hl HT]". by iApply "HT".
   Qed.
 
-  Lemma simplify_place_refine_l A (ty : rtype A) l β T:
-    (∀ x, l ◁ₗ{β} x @ ty -∗ T) ⊢ simplify_hyp (l◁ₗ{β}ty) T.
+  Lemma simplify_place_refine_l A (ty : rtype A) l β M T:
+    (∀ x, l ◁ₗ{β} x @ ty -∗ ‖M‖ T) ⊢ simplify_hyp (l◁ₗ{β}ty) M T.
   Proof.
     iIntros "HT Hl". unfold ty_of_rty; simpl_type. iDestruct "Hl" as (x) "Hv". by iApply "HT".
   Qed.
   Definition simplify_place_refine_l_inst := [instance simplify_place_refine_l with 0%N].
   Global Existing Instance simplify_place_refine_l_inst.
 
-  Lemma simplify_val_refine_l A (ty : rtype A) v T:
-    (∀ x, v ◁ᵥ (x @ ty) -∗ T) ⊢ simplify_hyp (v ◁ᵥ ty) T.
+  Lemma simplify_val_refine_l A (ty : rtype A) v M T:
+    (∀ x, v ◁ᵥ (x @ ty) -∗ ‖M‖ T) ⊢ simplify_hyp (v ◁ᵥ ty) M T.
   Proof.
     iIntros "HT Hl". unfold ty_of_rty; simpl_type. iDestruct "Hl" as (x) "Hv". by iApply "HT".
   Qed.
@@ -840,22 +851,22 @@ Section typing.
 
   (* This is forced since it can create evars in places where we don't
   want them. We might first want to try subtyping without the evar (see e.g. optional ) *)
-  Lemma simplify_goal_place_refine_r A (ty : rtype A) l β T:
-    (∃ x, l ◁ₗ{β} x @ ty ∗ T) ⊢ simplify_goal (l◁ₗ{β}ty) T.
-  Proof. iDestruct 1 as (x) "[Hl $]". by iExists _. Qed.
+  Lemma simplify_goal_place_refine_r A (ty : rtype A) l β M T:
+    (∃ x, l ◁ₗ{β} x @ ty ∗ T) ⊢ simplify_goal M (l◁ₗ{β}ty) T.
+  Proof. iDestruct 1 as (x) "[Hl $]". iModIntro. by iExists _. Qed.
   Definition simplify_goal_place_refine_r_inst := [instance simplify_goal_place_refine_r with 10%N].
   Global Existing Instance simplify_goal_place_refine_r_inst.
 
-  Lemma simplify_goal_val_refine_r A (ty : rtype A) v T :
-    (∃ x, v ◁ᵥ (x @ ty) ∗ T) ⊢ simplify_goal (v ◁ᵥ ty) T.
-  Proof. iDestruct 1 as (x) "[? $]". by iExists _. Qed.
+  Lemma simplify_goal_val_refine_r A (ty : rtype A) v M T :
+    (∃ x, v ◁ᵥ (x @ ty) ∗ T) ⊢ simplify_goal M (v ◁ᵥ ty) T.
+  Proof. iDestruct 1 as (x) "[? $]". iModIntro. by iExists _. Qed.
   Definition simplify_goal_val_refine_r_inst := [instance simplify_goal_val_refine_r with 10%N].
   Global Existing Instance simplify_goal_val_refine_r_inst.
 
   (* This rule is complete as [LocInBounds] implies that the location cannot be NULL. *)
-  Lemma simplify_goal_NULL_loc_in_bounds β ty n `{!LocInBounds ty β n} T:
+  Lemma simplify_goal_NULL_loc_in_bounds β ty n `{!LocInBounds ty β n} M T:
     False
-    ⊢ simplify_goal (NULL_loc ◁ₗ{β} ty) T.
+    ⊢ simplify_goal M (NULL_loc ◁ₗ{β} ty) T.
   Proof. by iIntros (?). Qed.
   Definition simplify_goal_NULL_loc_in_bounds_inst := [instance simplify_goal_NULL_loc_in_bounds with 0%N].
   Global Existing Instance simplify_goal_NULL_loc_in_bounds_inst.
@@ -881,43 +892,43 @@ Section typing.
     SimpleSubsumePlace (x @ ty1) ty2 P.
   Proof. iIntros (l β) "HP Hl". iExists (x). iApply (@simple_subsume_place with "HP Hl"). Qed.
 
-  Lemma simple_subsume_place_to_subsume A l β ty1 ty2 P
+  Lemma simple_subsume_place_to_subsume A M l β ty1 ty2 P
     `{!∀ x, SimpleSubsumePlace ty1 (ty2 x) (P x)} T:
-    (∃ x, P x ∗ T x) ⊢ subsume (l ◁ₗ{β} ty1) (λ x : A, l ◁ₗ{β} ty2 x) T.
-  Proof. iIntros "[% [HP ?]] Hl". iExists _. iFrame. iApply (@simple_subsume_place with "HP Hl"). Qed.
+    (∃ x, P x ∗ T x) ⊢ subsume (l ◁ₗ{β} ty1) M (λ x : A, l ◁ₗ{β} ty2 x) T.
+  Proof. iIntros "[% [HP ?]] Hl !>". iExists _. iFrame. iApply (@simple_subsume_place with "HP Hl"). Qed.
   Definition simple_subsume_place_to_subsume_inst := [instance simple_subsume_place_to_subsume].
   Global Existing Instance simple_subsume_place_to_subsume_inst.
 
-  Lemma simple_subsume_val_to_subsume A v ty1 ty2 P `{!∀ x, SimpleSubsumeVal ty1 (ty2 x) (P x)} T:
-    (∃ x, P x ∗ T x) ⊢ subsume (v ◁ᵥ ty1) (λ x : A, v ◁ᵥ ty2 x) T.
-  Proof. iIntros "[% [HP ?]] Hv". iExists _. iFrame. iApply (@simple_subsume_val with "HP Hv"). Qed.
+  Lemma simple_subsume_val_to_subsume A M v ty1 ty2 P `{!∀ x, SimpleSubsumeVal ty1 (ty2 x) (P x)} T:
+    (∃ x, P x ∗ T x) ⊢ subsume (v ◁ᵥ ty1) M (λ x : A, v ◁ᵥ ty2 x) T.
+  Proof. iIntros "[% [HP ?]] Hv !>". iExists _. iFrame. iApply (@simple_subsume_val with "HP Hv"). Qed.
   Definition simple_subsume_val_to_subsume_inst := [instance simple_subsume_val_to_subsume].
   Global Existing Instance simple_subsume_val_to_subsume_inst.
 
-  Lemma subsume_place_own_ex A ty1 ty2 l β1 β2 T:
-    subsume (l ◁ₗ{β1} ty1) (λ x : A, l ◁ₗ{β2 x} ty2 x) T :-
-      inhale (l ◁ₗ{β1} ty1); ∃ x, exhale ⌜β2 x = β1⌝; exhale (l ◁ₗ{β2 x} ty2 x); return T x.
-  Proof. iIntros "HT Hl". iDestruct ("HT" with "Hl") as "[% [<- [??]]]". iExists _. iFrame. Qed.
+  Lemma subsume_place_own_ex A M ty1 ty2 l β1 β2 T:
+    subsume (l ◁ₗ{β1} ty1) M (λ x : A, l ◁ₗ{β2 x} ty2 x) T :-
+      inhale (l ◁ₗ{β1} ty1); ‖M‖ ∃ x, exhale ⌜β2 x = β1⌝; exhale (l ◁ₗ{β2 x} ty2 x); return T x.
+  Proof. iIntros "HT Hl". iMod ("HT" with "Hl") as "[% [<- [??]]]". iModIntro. by iFrame. Qed.
   (* This lemma is applied via Hint Extern instead of declared as an instance with a `{!∀ x,
   IsEx (β x)} precondition for better performance. *)
   Definition subsume_place_own_ex_inst := [instance subsume_place_own_ex].
 
-  Lemma subsume_place_ty_ex A ty1 ty2 l β T:
-    subsume (l ◁ₗ{β} ty1) (λ x : A, l ◁ₗ{β} ty2 x) T :-
+  Lemma subsume_place_ty_ex A M ty1 ty2 l β T:
+    subsume (l ◁ₗ{β} ty1) M (λ x : A, l ◁ₗ{β} ty2 x) T :-
       ∃ x, exhale ⌜ty2 x = ty1⌝; return T x.
-  Proof. iIntros "[% [<- ?]] ?". iExists _. iFrame. Qed.
+  Proof. iIntros "[% [<- ?]] ? !>". iExists _. iFrame. Qed.
   (* This lemma is applied via Hint Extern instead of declared as an instance with a `{!∀ x,
   IsEx (ty2 x)} precondition for better performance. *)
   Definition subsume_place_ty_ex_inst := [instance subsume_place_ty_ex].
 
-  Lemma subtype_var {A B} (ty : A → type) x y l β T:
+  Lemma subtype_var {A B M} (ty : A → type) x y l β T:
     (∃ z, ⌜x = y z⌝ ∗ T z)
-    ⊢ subsume (l ◁ₗ{β} ty x) (λ z : B, l ◁ₗ{β} ty (y z)) T.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (l ◁ₗ{β} ty x) M (λ z : B, l ◁ₗ{β} ty (y z)) T.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   (* This must be an Hint Extern because an instance would be a big slowdown. *)
   Definition subtype_var_inst := [instance @subtype_var].
 
-  Lemma typed_binop_simplify v1 P1 v2 P2 o1 o2 ot1 ot2 {SH1 : SimplifyHyp P1 o1} {SH2 : SimplifyHyp P2 o2} `{!TCOneIsSome o1 o2} op T:
+  Lemma typed_binop_simplify v1 P1 v2 P2 o1 o2 ot1 ot2 {SH1 : SimplifyHyp P1 (={⊤}=) o1} {SH2 : SimplifyHyp P2 (={⊤}=) o2} `{!TCOneIsSome o1 o2} op T:
     let G1 := (SH1 (find_in_context (FindValP v1) (λ P, typed_bin_op v1 P v2 P2 op ot1 ot2 T))).(i2p_P) in
     let G2 := (SH2 (find_in_context (FindValP v2) (λ P, typed_bin_op v1 P1 v2 P op ot1 ot2 T))).(i2p_P) in
     let G :=
@@ -931,8 +942,8 @@ Section typing.
   Proof.
     iIntros "/= Hs Hv1 Hv2".
     destruct o1 as [n1|], o2 as [n2|] => //. 1: case_match.
-    1,3,4: iDestruct (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
-    4,5,6: iDestruct (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
+    1,3,4: iMod (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
+    4,5,6: iMod (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
     all: by simpl in *; iApply ("Hsub" with "[$]").
   Qed.
   Definition typed_binop_simplify_inst := [instance typed_binop_simplify].
@@ -949,16 +960,16 @@ Section typing.
   Definition typed_binop_comma_inst := [instance typed_binop_comma].
   Global Existing Instance typed_binop_comma_inst.
 
-  Lemma typed_unop_simplify v P n ot {SH : SimplifyHyp P (Some n)} op T:
+  Lemma typed_unop_simplify v P n ot {SH : SimplifyHyp P (={⊤}=) (Some n)} op T:
     (SH (find_in_context (FindValP v) (λ P, typed_un_op v P op ot T))).(i2p_P)
     ⊢ typed_un_op v P op ot T.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as (P') "[Hv Hsub]". simpl in *. by iApply ("Hsub" with "[$]").
+    iIntros "Hs Hv". iMod (i2p_proof with "Hs Hv") as (P') "[Hv Hsub]". simpl in *. by iApply ("Hsub" with "[$]").
   Qed.
   Definition typed_unop_simplify_inst := [instance typed_unop_simplify].
   Global Existing Instance typed_unop_simplify_inst | 1000.
 
-  Lemma typed_copy_alloc_id_simplify v1 P1 v2 P2 o1 o2 ot {SH1 : SimplifyHyp P1 o1} {SH2 : SimplifyHyp P2 o2} `{!TCOneIsSome o1 o2} T:
+  Lemma typed_copy_alloc_id_simplify v1 P1 v2 P2 o1 o2 ot {SH1 : SimplifyHyp P1 (={⊤}=) o1} {SH2 : SimplifyHyp P2 (={⊤}=) o2} `{!TCOneIsSome o1 o2} T:
     let G1 := (SH1 (find_in_context (FindValP v1) (λ P, typed_copy_alloc_id v1 P v2 P2 ot T))).(i2p_P) in
     let G2 := (SH2 (find_in_context (FindValP v2) (λ P, typed_copy_alloc_id v1 P1 v2 P ot T))).(i2p_P) in
     let G :=
@@ -972,14 +983,14 @@ Section typing.
   Proof.
     iIntros "/= Hs Hv1 Hv2".
     destruct o1 as [n1|], o2 as [n2|] => //. 1: case_match.
-    1,3,4: iDestruct (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
-    4,5,6: iDestruct (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
+    1,3,4: iMod (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
+    4,5,6: iMod (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
     all: by simpl in *; iApply ("Hsub" with "[$]").
   Qed.
   Definition typed_copy_alloc_id_simplify_inst := [instance typed_copy_alloc_id_simplify].
   Global Existing Instance typed_copy_alloc_id_simplify_inst | 1000.
 
-  Lemma typed_cas_simplify v1 P1 v2 P2 v3 P3 ot o1 o2 o3 {SH1 : SimplifyHyp P1 o1} {SH2 : SimplifyHyp P2 o2} {SH3 : SimplifyHyp P3 o3} `{!TCOneIsSome3 o1 o2 o3} T:
+  Lemma typed_cas_simplify v1 P1 v2 P2 v3 P3 ot o1 o2 o3 {SH1 : SimplifyHyp P1 (={⊤}=) o1} {SH2 : SimplifyHyp P2 (={⊤}=) o2} {SH3 : SimplifyHyp P3 (={⊤}=) o3} `{!TCOneIsSome3 o1 o2 o3} T:
     let G1 := (SH1 (find_in_context (FindValP v1) (λ P, typed_cas ot v1 P v2 P2 v3 P3 T))).(i2p_P) in
     let G2 := (SH2 (find_in_context (FindValP v2) (λ P, typed_cas ot v1 P1 v2 P v3 P3 T))).(i2p_P) in
     let G3 := (SH3 (find_in_context (FindValP v3) (λ P, typed_cas ot v1 P1 v2 P2 v3 P T))).(i2p_P) in
@@ -995,59 +1006,65 @@ Section typing.
   Proof.
     iIntros "/= Hs Hv1 Hv2 Hv3".
     destruct o1 as [n1|], o2 as [n2|], o3 as [n3|] => //=; repeat case_match => /=.
-    all: try iDestruct (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
-    all: try iDestruct (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
-    all: try iDestruct (i2p_proof with "Hs Hv3") as (P) "[Hv Hsub]".
+    all: try iMod (i2p_proof with "Hs Hv1") as (P) "[Hv Hsub]".
+    all: try iMod (i2p_proof with "Hs Hv2") as (P) "[Hv Hsub]".
+    all: try iMod (i2p_proof with "Hs Hv3") as (P) "[Hv Hsub]".
     all: by simpl in *; iApply ("Hsub" with "[$] [$]").
   Qed.
   Definition typed_cas_simplify_inst := [instance typed_cas_simplify].
   Global Existing Instance typed_cas_simplify_inst | 1000.
 
-  Lemma typed_annot_stmt_simplify A (a : A) l P n {SH : SimplifyHyp P (Some n)} T:
+  Lemma typed_annot_stmt_simplify A (a : A) l P n {SH : SimplifyHyp P (={⊤}=) (Some n)} T:
     (SH (find_in_context (FindLoc l) (λ '(β1, ty1),
        typed_annot_stmt a l (l ◁ₗ{β1} ty1) T))).(i2p_P)
     ⊢ typed_annot_stmt a l P T.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as ([β1 ty1]) "[Hl Hannot]" => /=.
+    iIntros "Hs Hv".
+    iMod (i2p_proof with "Hs Hv") as ([β1 ty1]) "[Hl Hannot]" => /=.
       by iApply ("Hannot" with "[$]").
   Qed.
   Definition typed_annot_stmt_simplify_inst := [instance typed_annot_stmt_simplify].
   Global Existing Instance typed_annot_stmt_simplify_inst | 1000.
 
-  Lemma typed_annot_expr_simplify A m (a : A) v P n {SH : SimplifyHyp P (Some n)} T:
+  Lemma typed_annot_expr_simplify A m (a : A) v P n {SH : SimplifyHyp P (={⊤}=) (Some n)} T:
     (SH (find_in_context (FindValP v) (λ Q,
        typed_annot_expr m a v Q T))).(i2p_P)
     ⊢ typed_annot_expr m a v P T.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as ([β1 ty1]) "[Hl Hannot]" => /=.
-      by iApply ("Hannot" with "[$]").
+    iIntros "Hs Hv".
+    destruct m; iMod (i2p_proof with "Hs Hv") as ([β1 ty1]) "[Hl Hannot]" => /=.
+    all: by iApply ("Hannot" with "[$]").
   Qed.
   Definition typed_annot_expr_simplify_inst := [instance typed_annot_expr_simplify].
   Global Existing Instance typed_annot_expr_simplify_inst | 1000.
 
-  Lemma typed_if_simplify ot v (P : iProp Σ) n {SH : SimplifyHyp P (Some n)} T1 T2:
+  Lemma typed_if_simplify ot v (P : iProp Σ) n {SH : SimplifyHyp P (={⊤}=) (Some n)} T1 T2:
     (SH (find_in_context (FindValP v) (λ Q,
        typed_if ot v Q T1 T2))).(i2p_P)
     ⊢ typed_if ot v P T1 T2.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as (Q) "[HQ HT]" => /=. simpl in *.
+    iIntros "Hs Hv". iMod (i2p_proof with "Hs Hv") as (Q) "[HQ HT]" => /=. simpl in *.
     iApply ("HT" with "HQ").
   Qed.
   Definition typed_if_simplify_inst := [instance typed_if_simplify].
   Global Existing Instance typed_if_simplify_inst | 1000.
 
-  Lemma typed_assert_simplify ot v P n {SH : SimplifyHyp P (Some n)} s fn ls R Q:
+  Lemma typed_assert_simplify ot v P n {SH : SimplifyHyp P (={⊤}=) (Some n)} s fn ls R Q:
     (SH (find_in_context (FindValP v) (λ P',
        typed_assert ot v P' s fn ls R Q))).(i2p_P)
     ⊢ typed_assert ot v P s fn ls R Q.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as (P') "[HP' HT]" => /=. simpl in *.
+    iIntros "Hs Hv". iMod (i2p_proof with "Hs Hv") as (P') "[HP' HT]" => /=. simpl in *.
     iApply ("HT" with "HP'").
   Qed.
   Definition typed_assert_simplify_inst := [instance typed_assert_simplify].
   Global Existing Instance typed_assert_simplify_inst | 1000.
 
   (*** statements *)
+  Global Instance elim_modal_li_fupd_wps p s Q Ψ P :
+      ElimModal True p false (‖={⊤}=‖ P) P (WPs s {{ Q, Ψ }}) (WPs s {{ Q, Ψ }}).
+  Proof. rewrite lm_fupd_eq. apply _. Qed.
+
   Global Instance elim_modal_bupd_typed_stmt p s fn ls R Q P :
     ElimModal True p false (|==> P) P (typed_stmt s fn ls R Q) (typed_stmt s fn ls R Q).
   Proof.
@@ -1099,7 +1116,7 @@ Section typing.
   Proof.
     iIntros "He" (Hls). wps_bind.
     iApply "He". iIntros (v ty) "Hv Hs".
-    iDestruct ("Hs" with "Hv") as "Hs". destruct ot => //.
+    iMod ("Hs" with "Hv") as "Hs". destruct ot => //.
     - iDestruct "Hs" as (b Hv) "Hs".
       iApply wps_if_bool; first done. by destruct b => /=; iApply "Hs".
     - iDestruct "Hs" as (z Hz) "Hs".
@@ -1136,7 +1153,7 @@ Section typing.
   Proof.
     iIntros "He" (Hls). wps_bind.
     iApply "He". iIntros (v ty) "Hv Hs".
-    iDestruct ("Hs" with "Hv") as "Hs".
+    iMod ("Hs" with "Hv") as "Hs".
     destruct ot => //.
     - iDestruct "Hs" as (???) "Hs".
       iApply wps_assert_bool; [done|done|..]. by iApply "Hs".
@@ -1180,12 +1197,12 @@ Section typing.
     ⊢ typed_stmt (annot: (AssertAnnot id); s) fn ls R Q.
   Proof. iIntros "[%a [HP Hcont]] ?". iApply wps_annot => /=. by iApply ("Hcont" with "HP"). Qed.
 
-  Lemma typed_block_rec Ps Q fn ls R s:
+  Lemma typed_block_rec Ps M Q fn ls R s:
     ([∗ map] b ↦ P ∈ Ps, ∃ s, ⌜Q !! b = Some s⌝ ∗ □(([∗ map] b ↦ P ∈ Ps, typed_block P b fn ls R Q) -∗ P -∗ typed_stmt s fn ls R Q)) -∗
     (([∗ map] b ↦ P ∈ Ps, typed_block P b fn ls R Q) -∗ typed_stmt s fn ls R Q) -∗
-    typed_stmt s fn ls R Q.
+    ‖M‖ typed_stmt s fn ls R Q.
   Proof.
-    iIntros "HQ Hs" (Hls).
+    iIntros "HQ Hs !>" (Hls).
     iApply ("Hs" with "[HQ]"); last done.
     iApply wps_block_rec.
     iApply (big_sepM_mono with "HQ").
@@ -1279,7 +1296,7 @@ Section typing.
   Proof.
     iIntros "He1" (Φ) "HΦ".
     wp_bind. iApply "He1". iIntros (v1 ty1) "Hv1 Hif".
-    iDestruct ("Hif" with "Hv1") as "HT". destruct ot => //.
+    iMod ("Hif" with "Hv1") as "HT". destruct ot => //.
     all: iDestruct "HT" as (zorl ?) "HT".
     - iApply wp_if_bool; [done|..]. by destruct zorl; iApply "HT".
     - iApply wp_if_int; [done|..]. by case_decide; iApply "HT".
@@ -1386,7 +1403,7 @@ Section typing.
             l ◁ₗ{β1} typ ty2' -∗ R ty2' -∗ T v ty3))))
     ⊢ typed_read a e ot mc T.
   Proof.
-    iIntros (HT') "HT'". iIntros (Φ) "HΦ".
+    iIntros (HT') "HT'". iIntros (Φ) "HΦ". iApply wp_fupd.
     iApply (HT' with "HT'").
     iIntros (K l). iDestruct 1 as ([β ty]) "[Hl HP]".
     iApply ("HP" with "Hl").
@@ -1433,7 +1450,7 @@ Section typing.
          typed_write_end a ⊤ ot v ty l2 β2 ty2 (λ ty3, l ◁ₗ{β1} typ ty3 -∗ R ty3 -∗ T))))
     ⊢ typed_write a e ot v ty T.
   Proof.
-    iIntros (HT') "HT'". iIntros (Φ) "HΦ".
+    iIntros (HT') "HT'". iIntros (Φ) "HΦ". iApply wp_fupd.
     iApply (HT' with "HT'"). iIntros (K l). iDestruct 1 as ([β1 ty1]) "[Hl HK]".
     iApply ("HK" with "Hl"). iIntros (l2 β2 ty2 typ R) "Hl' Hc He".
     iApply "HΦ". iIntros "Hv".
@@ -1497,7 +1514,7 @@ Section typing.
     ⊢ typed_addr_of e T.
   Proof.
     iIntros (HT') "HT'". iIntros (Φ) "HΦ".
-    iApply @wp_fupd. iApply (HT' with "HT'").
+    iApply @wp_fupd. iApply @wp_fupd. iApply (HT' with "HT'").
     iIntros (K l). iDestruct 1 as ([β ty]) "[Hl HP]".
     iApply ("HP" with "Hl"). iIntros (l2 β2 ty2 typ R) "Hl' Hc HT".
     iMod ("HT" with "Hl'") as (β3 ty3 ty') "[Hty3 [Hty' HT]]".
@@ -1531,6 +1548,14 @@ Section typing.
   Definition copy_as_refinement_inst := [instance copy_as_refinement].
   Global Existing Instance copy_as_refinement_inst.
 
+  (* TODO: Do we still need annot_share if we have this rule? *)
+  Lemma subsume_share A l ty1 ty2 T:
+    (subsume (l ◁ₗ{Own} ty1) (={⊤}=) (λ x : A, l ◁ₗ{Own} ty2 x) T)
+    ⊢ subsume (l ◁ₗ{Own} ty1) (={⊤}=) (λ x : A, l ◁ₗ{Shr} ty2 x) T.
+  Proof. iIntros "Hsub Hl". iMod ("Hsub" with "Hl") as (?) "[Hl $]". by iMod (ty_share with "Hl"). Qed.
+  Definition subsume_share_inst := [instance subsume_share].
+  Global Existing Instance subsume_share_inst | 200.
+
   Lemma annot_share l ty T:
     (l ◁ₗ{Shr} ty -∗ T)
     ⊢ typed_annot_stmt (ShareAnnot) l (l ◁ₗ ty) T.
@@ -1549,11 +1574,11 @@ Section typing.
   Definition annot_stop_inst := [instance annot_stop].
   Global Existing Instance annot_stop_inst.
 
-  Lemma annot_unfold_once l β ty n {SH : SimplifyHyp (l ◁ₗ{β} ty) (Some (Npos n))} T:
+  Lemma annot_unfold_once l β ty n {SH : SimplifyHyp (l ◁ₗ{β} ty) (={⊤}=) (Some (Npos n))} T:
     (SH T).(i2p_P)
     ⊢ typed_annot_stmt UnfoldOnceAnnot l (l ◁ₗ{β} ty) T.
   Proof.
-    iIntros "Hs Hv". iDestruct (i2p_proof with "Hs Hv") as "HT" => /=.
+    iIntros "Hs Hv". iMod (i2p_proof with "Hs Hv") as "HT" => /=.
     by iApply step_fupd_intro.
   Qed.
   Definition annot_unfold_once_inst := [instance annot_unfold_once].
@@ -1583,13 +1608,13 @@ Section typing.
 End typing.
 
 (* This must be an Hint Extern because an instance would be a big slowdown . *)
-Global Hint Extern 50 (Subsume (_ ◁ₗ{_} ?ty _) (λ _, _ ◁ₗ{_} ?ty2 _)%I) =>
+Global Hint Extern 50 (Subsume (_ ◁ₗ{_} ?ty _) _ (λ _, _ ◁ₗ{_} ?ty2 _)%I) =>
   match ty with | ty2 => is_var ty; class_apply subtype_var_inst end : typeclass_instances.
 
-Global Hint Extern 5 (Subsume (_ ◁ₗ{_} _) (λ _, _ ◁ₗ{_.1ₗ} _)%I) =>
+Global Hint Extern 5 (Subsume (_ ◁ₗ{_} _) _ (λ _, _ ◁ₗ{_.1ₗ} _)%I) =>
   (class_apply subsume_place_own_ex_inst) : typeclass_instances.
 
-Global Hint Extern 5 (Subsume (_ ◁ₗ{_} _) (λ _, _ ◁ₗ{_} _.1ₗ)%I) =>
+Global Hint Extern 5 (Subsume (_ ◁ₗ{_} _) _ (λ _, _ ◁ₗ{_} _.1ₗ)%I) =>
   (class_apply subsume_place_ty_ex_inst) : typeclass_instances.
 
 

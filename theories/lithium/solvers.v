@@ -90,7 +90,7 @@ Ltac normalize_and_simpl_impl handle_exist :=
         assert_is_trivial P; intros _
       | progress normalize_goal_impl
       | let changed := open_constr:(_) in
-        notypeclasses refine (simpl_impl_unsafe_impl changed P _ Q _); [solve [refine _] |];
+        notypeclasses refine (simpl_impl_unsafe_impl changed _ P _ Q _); [solve [typeclasses eauto] |];
         (* We need to simpl here to make sure that we only introduce
         fully simpl'd terms into the context (and do beta reduction
         for the lemma application above). *)
@@ -120,7 +120,7 @@ Ltac normalize_and_simpl_goal_step :=
     | lazymatch goal with
       | |- _ ∧ _ => split
       end
-    | notypeclasses refine (simpl_and_unsafe _); [solve [refine _] |]; simpl
+    | notypeclasses refine (simpl_and_unsafe _ _ _ _); [solve [typeclasses eauto] |]; simpl
     | lazymatch goal with
     (* relying on the fact that unification variables cannot contain
        dependent variables to distinguish between dependent and non dependent forall *)

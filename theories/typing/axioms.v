@@ -1,4 +1,4 @@
-Require Import Coq.Logic.EqdepFacts.
+Require Import Stdlib.Logic.EqdepFacts.
 
 Module Ax : EqdepElimination.
 

@@ -1,6 +1,7 @@
-(coq.theory
+(rocq.theory
  (flags :standard -w -notation-incompatible-prefix -w -redundant-canonical-projection)
  (name refinedc.tutorial.adequacy)
- (theories caesium refinedc.typing refinedc.typing.automation lithium
+ (theories Stdlib stdpp iris RecordUpdate Ltac2
+  caesium refinedc.typing refinedc.typing.automation lithium
   refinedc.examples.spinlock refinedc.examples.latch
   refinedc.tutorial.t03_list refinedc.tutorial.t04_alloc refinedc.tutorial.t05_main))

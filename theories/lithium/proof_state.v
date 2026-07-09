@@ -38,10 +38,10 @@ Ltac generate_i2p_instance print to_tc arg c :=
     match c with
     (* to_tc must be first to allow overriding of the cases below *)
     | _ => to_tc arg c
-    | subsume ?x1 ?x2 => constr:(Subsume x1 x2)
+    | subsume ?x1 ?x2 ?x3 => constr:(Subsume x1 x2 x3)
     | find_in_context ?x1 => constr:(FindInContext x1 arg)
-    | simplify_hyp ?x1 => constr:(SimplifyHyp x1 (Some arg))
-    | simplify_goal ?x1 => constr:(SimplifyGoal x1 (Some arg))
+    | simplify_hyp ?x1 ?x2 => constr:(SimplifyHyp x1 x2 (Some arg))
+    | simplify_goal ?x1 ?x2 => constr:(SimplifyGoal x1 x2 (Some arg))
     end in
   let type_c := type of c in
   let type_c := eval lazy zeta in type_c in

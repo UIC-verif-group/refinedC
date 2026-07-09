@@ -1,3 +1,4 @@
+version: "9ebb2cd-dirty"
 opam-version: "2.0"
 name: "coq-lithium"
 synopsis: "Lithium proof automation for Iris"
@@ -15,11 +16,10 @@ bug-reports: "https://gitlab.mpi-sws.org/iris/refinedc/issues"
 dev-repo: "git+https://gitlab.mpi-sws.org/iris/refinedc.git"
 
 depends: [
-  "coq" { (= "8.20.0" ) }
-  "coq-iris" {(= "4.3.0") | (= "dev") }
-  "coq-stdpp-bitvector" {= "1.11.0"}
-  "dune" {>= "3.9.1"}
-  "coq-record-update" {= "0.3.4"}
+  "rocq-iris" {(= "4.5.0") | (= "dev") }
+  "rocq-stdpp-bitvector" {= "1.13.0"}
+  "dune" {>= "3.21.1"}
+  "coq-record-update" {= "0.3.6"}
 ]
 
 build: [

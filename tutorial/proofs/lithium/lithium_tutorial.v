@@ -27,10 +27,13 @@ Section lithium.
   Proof.
     iStartProof.
     (* Run Lithium. *)
+    liEnsureInvariant.
     repeat liStep.
+    liShow. iModIntro.
     (* Lithium stops at the WP. Let's apply our lemma. *)
     iApply wp_add.
     (* Run Lithium. *)
+    liEnsureInvariant.
     repeat liStep.
     (* Lithium finished and left some sideconditions. *)
     Unshelve. all: unshelve_sidecond.
@@ -44,7 +47,7 @@ Section lithium.
      WP ValInt n + ValInt 1 {{ v,
        ∃ n', ⌜v = ValInt n'⌝ ∗ ⌜n' > 0⌝ ∗ True }}.
   Proof.
-    iStartProof.
+    iStartProof. liEnsureInvariant. liShow.
     (* Introduce the universal quantifier. *)
     liStep.
     (* Introduce the pure assumption
@@ -53,9 +56,10 @@ Section lithium.
     (* Lithium does not know how to handle this WP. *)
     Fail liStep.
     (* Let's apply our lemma. *)
+    iModIntro.
     iApply wp_add.
     (* Turn the existential quantifer into a Lithium existential quantifer . *)
-    liStep.
+    liEnsureInvariant. liShow. liStep.
     (* Solve the sidecondition to instantiate the evar. *)
     liStep. liStep.
     (* Shelve the sidecondition. *)
@@ -88,9 +92,9 @@ Section lithium.
   (* Let's automate the basic goal WP. *)
   Ltac liEExpr :=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add _ _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add _ _ _) _)
         end
     end.
 
@@ -123,9 +127,9 @@ Section lithium.
   (* We need to update liEExpr. *)
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add2 _ _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add2 _ _ _) _)
         end
     end.
 
@@ -167,9 +171,9 @@ Section lithium.
   (* We need to update liEExpr. *)
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add3 _ _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add3 _ _ _) _)
         end
     end.
 
@@ -193,10 +197,10 @@ Section lithium.
 
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add3 _ _ _) _)
-        | Val _ => notypeclasses refine (tac_fast_apply (wp_val _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add3 _ _ _) _)
+        | Val _ => notypeclasses refine (tac_li_apply (wp_val _ _) _)
         end
     end.
 
@@ -224,7 +228,7 @@ Section lithium.
 
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
         | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add4 _ _ _) _)
         | Val _ => notypeclasses refine (tac_fast_apply (wp_val _ _) _)
@@ -252,11 +256,11 @@ Section lithium.
 
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add3 _ _ _) _)
-        | Load _ => notypeclasses refine (tac_fast_apply (wp_load _ _) _)
-        | Val _ => notypeclasses refine (tac_fast_apply (wp_val _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add3 _ _ _) _)
+        | Load _ => notypeclasses refine (tac_li_apply (wp_load _ _) _)
+        | Val _ => notypeclasses refine (tac_li_apply (wp_val _ _) _)
         end
     end.
 
@@ -276,11 +280,11 @@ Section lithium.
 
   Ltac liEExpr ::=
     match goal with
-    | |- envs_entails _ (wp _ _ ?e _) =>
+    | |- envs_entails _ (‖_‖ wp _ _ ?e _) =>
         match e with
-        | AddE _ _ => notypeclasses refine (tac_fast_apply (wp_add3 _ _ _) _)
-        | Load _ => notypeclasses refine (tac_fast_apply (wp_load2 _ _) _)
-        | Val _ => notypeclasses refine (tac_fast_apply (wp_val _ _) _)
+        | AddE _ _ => notypeclasses refine (tac_li_apply (wp_add3 _ _ _) _)
+        | Load _ => notypeclasses refine (tac_li_apply (wp_load2 _ _) _)
+        | Val _ => notypeclasses refine (tac_li_apply (wp_val _ _) _)
         end
     end.
 
@@ -306,10 +310,10 @@ Section lithium.
     repeat liEStep; liShow.
   Abort.
 
-  Lemma subsume_mapsto A l v1 v2 G:
+  Lemma subsume_mapsto A M l v1 v2 G:
     (∃ x, ⌜v1 = v2 x⌝ ∗ G x)
-    ⊢ subsume (l ↦ v1) (λ x : A, l ↦ (v2 x)) G.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+    ⊢ subsume (l ↦ v1) M (λ x : A, l ↦ (v2 x)) G.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_mapsto_inst := [instance subsume_mapsto].
   Global Existing Instance subsume_mapsto_inst.
 
@@ -557,10 +561,10 @@ Section lithium.
   between myint) and [G] is the Lithium goal that the subsumption
   should be transformed into (here we reduce proving the subsumption
   to proving equality between the numbers). *)
-  Lemma subsume_myint A l n n' G:
+  Lemma subsume_myint A M l n n' G:
     (∃ x, ⌜n = n' x⌝ ∗ G x)
-    ⊢ subsume (l ◁ₗ myint n) (λ x : A, l ◁ₗ myint (n' x)) G.
-  Proof. iIntros "[% [-> HG]]". iIntros "Hl". iExists _. by iFrame. Qed.
+    ⊢ subsume (l ◁ₗ myint n) M (λ x : A, l ◁ₗ myint (n' x)) G.
+  Proof. iIntros "[% [-> HG]]". iIntros "Hl !>". iExists _. by iFrame. Qed.
 
   (** The [subsume_myint] needs to be registered with the Lithium
   automation, which we do as follows: *)
@@ -618,7 +622,7 @@ Section lithium.
   Abort.
 
   (** To prove this subsumption, we reduce it to the following Lithium goal: *)
-  Lemma subsume_myarray A l ty (i : nat) tys G:
+  Lemma subsume_myarray A M l ty (i : nat) tys G:
     (
       (** First, one has to prove that i actually is in the range of the list *)
       ⌜i < length tys⌝%nat ∗ (
@@ -629,20 +633,20 @@ Section lithium.
         (** ... which is the type at index i of tys *)
         ⌜tys !! i = Some ty'⌝ -∗
         (** Finally, one has to prove that (l +ₗ i) has type ty' *)
-        (l +ₗ i) ◁ₗ ty' ∗
+        ‖M‖ (l +ₗ i) ◁ₗ ty' ∗
         (** and the continuation G. *)
         ∃ x, G x)
     )
     ⊢
-    subsume (l ◁ₗ myarray (<[i:=ty]> tys)) (λ x : A, l ◁ₗ myarray tys) G.
+    subsume (l ◁ₗ myarray (<[i:=ty]> tys)) M (λ x : A, l ◁ₗ myarray tys) G.
   Proof.
     (** This lemma is easy to prove using myarray_access. *)
     iIntros "[%Hlt HG] Harray".
-    iDestruct (myarray_access with "Harray") as "[Hl Harray]". { by apply: list_lookup_insert. }
+    iDestruct (myarray_access with "Harray") as "[Hl Harray]". { by apply: list_lookup_insert_eq. }
     move: Hlt => /lookup_lt_is_Some [ty' ?].
-    iDestruct ("HG" with "Hl [//]") as "[Hl [% ?]]". iExists _. iFrame.
+    iMod ("HG" with "Hl [//]") as "[Hl [% ?]]". iModIntro. iFrame.
     iDestruct ("Harray" with "Hl") as "Harray".
-    by rewrite list_insert_insert list_insert_id.
+    by rewrite list_insert_insert_eq list_insert_id.
   Qed.
   (** Again we register this rule. *)
   Definition subsume_myarray_inst := [instance subsume_myarray].
@@ -672,7 +676,7 @@ Section lithium.
     l ◁ₗ myarray (<[i := (n @ int i32)]> tys) -∗
     l ◁ₗ myarray tys ∗
       typed_val_expr (use{IntOp i32} (l +ₗ i)) (λ v ty,
-        subsume (v ◁ᵥ ty) (λ _ : unit, v ◁ᵥ n @ int i32) (λ _, True)).
+        subsume (v ◁ᵥ ty) (-) (λ _ : unit, v ◁ᵥ n @ int i32) (λ _, True)).
   Proof.
     iStartProof.
     (** The goal can be solved automatically:*)
@@ -681,6 +685,7 @@ Section lithium.
     the subsume: *)
     do 5 liRStep; liShow.
     (** Now we can step through how the rule from above is handled: *)
+    liRStep; liShow.
     liRStep; liShow.
     liRStep; liShow.
     liRStep; liShow.

@@ -33,7 +33,7 @@
 [[rc::requires("{StronglySorted (≤) ls}")]]
 [[rc::returns("{x ∈ ls} @ optional<∃ i : nat. i @ int<i32> & {ls !! i = Some x}, {-1} @ int<i32>>")]]
 [[rc::ensures("own p : array<i32, {ls `at_type` int i32}>")]]
- [[rc::lemmas("elem_of_list_lookup_2", "must_be_in_range_full", "must_be_in_range_not_in",
+ [[rc::lemmas("list_elem_of_lookup_2", "must_be_in_range_full", "must_be_in_range_not_in",
              "must_be_in_range_sorted_r", "must_be_in_range_sorted_l")]]
 int binary_search(int *xs, int n, int x) {
   int l = 0, r = n;

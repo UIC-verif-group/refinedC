@@ -429,7 +429,7 @@ Section alloc_alive.
 
   Global Instance AllocAlive_simpl_and ty β P P' `{!AllocAlive ty β P'} `{!IsEx P} :
     SimplAndUnsafe (AllocAlive ty β P) (P = P').
-  Proof. by move => ->. Qed.
+  Proof. constructor. by move => ->. Qed.
 End alloc_alive.
 
 Global Typeclasses Opaque type_alive.

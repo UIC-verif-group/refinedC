@@ -1,6 +1,4 @@
-From stdpp Require Import list.
-From stdpp Require Import sets.
-From Coq Require Export ssreflect.
+From stdpp Require Import list sets ssreflect.
 
   (* upstream to stdpp? *)
 Lemma list_difference_app_r `{!EqDecision A} (l k k' : list A) :

@@ -27,11 +27,11 @@ Section tyfold.
     RType (tyfold_type tys base).
 
   Local Typeclasses Transparent own_constrained persistent_own_constraint.
-  Lemma simplify_hyp_place_tyfold_optional l β ls tys b T:
+  Lemma simplify_hyp_place_tyfold_optional l β ls tys b M T:
     (l ◁ₗ{β} (maybe2 cons tys) @ optionalO (λ '(ty, tys), tyexists (λ l2, tyexists (λ ls2,
        constrained (
-       own_constrained (tyown_constraint l2 (ls2 @ tyfold tys b)) (ty (place l2))) (⌜ls = l2::ls2⌝)))) b -∗ T)
-    ⊢ simplify_hyp (l◁ₗ{β} ls @ tyfold tys b) T.
+       own_constrained (tyown_constraint l2 (ls2 @ tyfold tys b)) (ty (place l2))) (⌜ls = l2::ls2⌝)))) b -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l◁ₗ{β} ls @ tyfold tys b) M T.
   Proof.
     iIntros "HT Hl". iApply "HT". iDestruct "Hl" as (Hlen) "[Htys Hb]".
     destruct tys as [|ty tys], ls as [ |l' ls] => //=.
@@ -44,17 +44,17 @@ Section tyfold.
     [instance simplify_hyp_place_tyfold_optional with 50%N].
   Global Existing Instance simplify_hyp_place_tyfold_optional_inst.
 
-  Lemma simplify_goal_place_tyfold_nil l β ls b T:
-    ⌜ls = []⌝ ∗ l ◁ₗ{β} b ∗ T ⊢ simplify_goal (l◁ₗ{β} ls @ tyfold [] b) T.
-  Proof. iIntros "[-> [Hl $]]". repeat iSplit => //. Qed.
+  Lemma simplify_goal_place_tyfold_nil l β ls b M T:
+    ⌜ls = []⌝ ∗ l ◁ₗ{β} b ∗ T ⊢ simplify_goal M (l◁ₗ{β} ls @ tyfold [] b) T.
+  Proof. iIntros "[-> [Hl $]] !>". repeat iSplit => //. Qed.
   Definition simplify_goal_place_tyfold_nil_inst := [instance simplify_goal_place_tyfold_nil with 0%N].
   Global Existing Instance simplify_goal_place_tyfold_nil_inst.
 
-  Lemma simplify_goal_place_tyfold_cons l β ls ty tys b T:
+  Lemma simplify_goal_place_tyfold_cons l β ls ty tys b M T:
     (∃ l2 ls2, ⌜ls = l2::ls2⌝ ∗ l ◁ₗ{β} ty (place l2) ∗ l2 ◁ₗ{β} ls2 @ tyfold tys b ∗ T)
-    ⊢ simplify_goal (l◁ₗ{β} ls @ tyfold (ty :: tys) b) T.
+    ⊢ simplify_goal M (l◁ₗ{β} ls @ tyfold (ty :: tys) b) T.
   Proof.
-    iDestruct 1 as (l2 ls2 ->) "[Hl [[% [Htys Hb]] $]]".
+    iDestruct 1 as (l2 ls2 ->) "[Hl [[% [Htys Hb]] $]]". iModIntro.
     iSplit => /=. 1: by iPureIntro; f_equal. iFrame.
     iSplitR "Hb"; first by eauto with iFrame.
     iStopProof. f_equiv. destruct ls2 =>//=. by apply default_last_cons.
@@ -62,24 +62,24 @@ Section tyfold.
   Definition simplify_goal_place_tyfold_cons_inst := [instance simplify_goal_place_tyfold_cons with 0%N].
   Global Existing Instance simplify_goal_place_tyfold_cons_inst.
 
-  Lemma subsume_tyfold_eq A l β ls1 ls2 tys b1 b2 T :
-    (default l (last ls1) ◁ₗ{β} b1 -∗ ∃ x, ⌜ls1 = ls2 x⌝ ∗ (default l (last ls1) ◁ₗ{β} b2 x) ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} ls1 @ tyfold tys b1) (λ x : A, l ◁ₗ{β} (ls2 x) @ tyfold tys (b2 x)) T.
+  Lemma subsume_tyfold_eq A M l β ls1 ls2 tys b1 b2 T :
+    (default l (last ls1) ◁ₗ{β} b1 -∗ ‖M‖ ∃ x, ⌜ls1 = ls2 x⌝ ∗ (default l (last ls1) ◁ₗ{β} b2 x) ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} ls1 @ tyfold tys b1) M (λ x : A, l ◁ₗ{β} (ls2 x) @ tyfold tys (b2 x)) T.
   Proof.
-    iIntros "HT". iDestruct 1 as (?) "[? Hb]". iDestruct ("HT" with "Hb") as (? ->) "[? ?]".
-    iExists _. by iFrame.
+    iIntros "HT". iDestruct 1 as (?) "[? Hb]". iMod ("HT" with "Hb") as (? ->) "[? ?]".
+    iModIntro. by iFrame.
   Qed.
   Definition subsume_tyfold_eq_inst := [instance subsume_tyfold_eq].
   Global Existing Instance subsume_tyfold_eq_inst.
 
-  Lemma subsume_tyfold_snoc A B l β f ls1 ls2 tys (ty : B → A) b1 b2 T :
-    (default l (last ls1) ◁ₗ{β} b1 -∗ ∃ x l2, ⌜ls2 x = ls1 ++ [l2]⌝ ∗
+  Lemma subsume_tyfold_snoc A B M l β f ls1 ls2 tys (ty : B → A) b1 b2 T :
+    (default l (last ls1) ◁ₗ{β} b1 -∗ ‖M‖ ∃ x l2, ⌜ls2 x = ls1 ++ [l2]⌝ ∗
          default l (last ls1) ◁ₗ{β} f (ty x) (place l2) ∗ l2 ◁ₗ{β} (b2 x) ∗ T x)
     ⊢ subsume (l ◁ₗ{β} ls1 @ tyfold (f <$> tys) b1)
-        (λ x : B, l ◁ₗ{β} (ls2 x) @ tyfold (f <$> (tys ++ [ty x])) (b2 x)) T.
+        M (λ x : B, l ◁ₗ{β} (ls2 x) @ tyfold (f <$> (tys ++ [ty x])) (b2 x)) T.
   Proof.
     iIntros "HT". iDestruct 1 as (Hlen) "(Htys&Hb)".
-    iDestruct ("HT" with "Hb") as (?? Heq) "[?[??]]". iExists _. iFrame.
+    iMod ("HT" with "Hb") as (?? Heq) "[?[??]]". iModIntro. iFrame.
     rewrite fmap_app. rewrite Heq. iSplit.
     { iPureIntro. by rewrite !length_app Hlen length_fmap. }
     rewrite last_snoc /=. iFrame. iSplitL "Htys" => /=.

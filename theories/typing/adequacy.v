@@ -77,10 +77,10 @@ Proof.
   iSplitL "Hctx Hf"; last first. 1: iSplitL "Hmains".
   - rewrite big_sepL2_fmap_l. iApply big_sepL2_replicate_r; [done|]. iApply (big_sepL_impl with "Hmains").
     iIntros "!#" (? main ?); iDestruct 1 as (P) "[Hmain HP]".
-    iApply (type_call with "[-]"). 2: { by iIntros (??) "??". }
+    iApply (type_call (typeG0:=HtypeG) with "[-]"). 2: { by iIntros (??) "??". }
     iApply type_val. iApply type_val_context.
     iExists (main @ function_ptr (main_type P))%I => /=. iFrame => /=.
-    iApply type_call_fnptr. iIntros "_". iExists () => /=. iFrame. by iIntros (v []) "Hv" => /=.
+    iApply type_call_fnptr. iIntros "_ !>". iExists () => /=. iFrame. by iIntros (v []) "Hv" => /=.
   - iFrame. iIntros (?? _ _ ?) "_ _ _". iApply fupd_mask_intro_discard => //. iPureIntro. by eauto.
   - by iFrame.
 Qed.

@@ -138,20 +138,20 @@ Section programs.
     v ◁ᵥ p @ intptr it -∗ v ◁ᵥ p.2 @ int it.
   Proof. iIntros "(%aid&%&%&%&#Hlib)". unfold int; simpl_type. by iPureIntro. Qed.
 
-  Lemma subsume_intptr_int_val A v it (n : A → Z) (p : loc) T:
+  Lemma subsume_intptr_int_val A M v it (n : A → Z) (p : loc) T:
     (∃ x, ⌜n x = p.2⌝ ∗ T x)
-    ⊢ subsume (v ◁ᵥ p @ intptr it) (λ x, v ◁ᵥ (n x) @ int it) T.
+    ⊢ subsume (v ◁ᵥ p @ intptr it) M (λ x, v ◁ᵥ (n x) @ int it) T.
   Proof.
-    iIntros "[% [%Heq ?]] ?". iExists _. iFrame. rewrite Heq. by iApply intptr_wand_int.
+    iIntros "[% [%Heq ?]] ? !>". iExists _. iFrame. rewrite Heq. by iApply intptr_wand_int.
   Qed.
   Definition subsume_intptr_int_val_inst := [instance subsume_intptr_int_val].
   Global Existing Instance subsume_intptr_int_val_inst.
 
-  Lemma subsume_intptr_int_place A l β it n p T:
+  Lemma subsume_intptr_int_place A M l β it n p T:
     (∃ x, ⌜n x = p.2⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} p @ intptr it) (λ x : A, l ◁ₗ{β} (n x) @ int it) T.
+    ⊢ subsume (l ◁ₗ{β} p @ intptr it) M (λ x : A, l ◁ₗ{β} (n x) @ int it) T.
   Proof.
-    iIntros "[% [%Heq ?]]". rewrite /ty_own /=. iIntros "(%v&%aid&%&%&%&%&?&?)".
+    iIntros "[% [%Heq ?]]". rewrite /ty_own /=. iIntros "(%v&%aid&%&%&%&%&?&?) !>".
     iFrame. by rewrite Heq.
   Qed.
   Definition subsume_intptr_int_place_inst := [instance subsume_intptr_int_place].

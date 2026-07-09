@@ -32,8 +32,7 @@ typedef int priority_search_t;
 [[rc::args("p @ &own<uninit<struct_prio_bitmap>>")]]
 [[rc::ensures("own p : {replicate (Z.to_nat num_priorities) false} @ prio_bitmap_t")]]
 [[rc::tactics("by apply list_subequiv_split; solve_goal.")]]
-[[rc::tactics("by have -> : i = 4%nat by [lia]; compute_done.")]]
-[[rc::tactics("by have -> : i = 4%nat by [lia]; compute_done.")]]
+[[rc::tactics("by have -> : i = 4%nat by [lia].")]]
 static inline
 void prio_level_init(prio_bitmap_t *bm) {
   [[rc::exists("i : nat")]]

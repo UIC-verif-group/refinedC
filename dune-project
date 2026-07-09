@@ -1,6 +1,6 @@
-(lang dune 3.8)
+(lang dune 3.21)
 (name refinedc)
 (package (name refinedc))
 (package (name coq-lithium))
 (package (name coq-caesium-config-no-align) (allow_empty))
-(using coq 0.8)
+(using rocq 0.11)

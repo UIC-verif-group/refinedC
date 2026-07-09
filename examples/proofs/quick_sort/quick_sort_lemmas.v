@@ -180,7 +180,7 @@ Definition unindexed {A : Type} (m : natmap A) :=
 Lemma unindexed_elem_of {A : Type} (m : natmap A) x :
   x ∈ unindexed m ↔ ∃ i, m !! i = Some x.
 Proof.
-  rewrite elem_of_list_fmap. split.
+  rewrite list_elem_of_fmap. split.
   - move => [[i ?] [-> /elem_of_map_to_list ?]].
     by exists i.
   - move => [i ?].
@@ -292,7 +292,7 @@ Proof.
       repeat case_bool_decide; simplify_eq; rewrite -Heq.
       all: by do!
         [ rewrite list_lookup_insert_ne; last solve_goal
-        | rewrite list_lookup_insert;    last solve_goal ].
+        | rewrite list_lookup_insert_eq;    last solve_goal ].
 Qed.
 
 Ltac solve_length_by_perm :=

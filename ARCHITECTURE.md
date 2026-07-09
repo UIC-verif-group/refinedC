@@ -10,7 +10,7 @@ https://matklad.github.io//2021/02/06/ARCHITECTURE.md.html
 ## Bird's eye view
 
 ```
-├── theories                      Coq source code of RefiendC.
+├── theories                      Coq source code of RefinedC.
 │   ├── lang                      Caesium formalization of C and Iris instantiation.
 │   ├── lithium                   Lithium definition and interpreter.
 │   └── typing                    RefinedC type system.

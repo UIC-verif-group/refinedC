@@ -7,21 +7,27 @@ From refinedc.examples.scheduler.src.fdsched Require Export basic_definitions.
 (** * upstream *)
 (* TODO: upstream the following definitions *)
 Global Instance simpl_plus_eq_l (x y z z' : nat):
-  SimplBothRel (=) (x + y + z)%nat (x + z')%nat (y + z = z')%nat.
+  SimplBoth (x + y + z = x + z')%nat (y + z = z')%nat.
 Proof. split; lia. Qed.
+Definition simpl_plus_eq_l_sym (x y z z' : nat) :=
+  simpl_both_sym (=) (simpl_plus_eq_l x y z z').
+Global Existing Instance simpl_plus_eq_l_sym | 5.
 
 Global Instance simpl_sum_list_cons l l' x :
   SimplAndUnsafe (sum_list l + x = sum_list l')%nat (l' = l ++ [x]).
-Proof. intros ->; induction l => //=; lia. Qed.
+Proof. constructor. intros ->; induction l => //=; lia. Qed.
 
 Global Instance simpl_add_0 m n :
-  SimplAndRel (=) n (n + m)%nat (m = 0)%nat.
+  SimplAnd (n = n + m)%nat (m = 0)%nat.
 Proof. split; lia. Qed.
+Definition simpl_add_0_sym m n :=
+  simpl_and_impl_sym (=) (simpl_add_0 m n).
+Global Existing Instance simpl_add_0_sym | 5.
 
 Global Instance simpl_sum_list_nil l :
-  SimplAndRel (=) (sum_list l) 0%nat (∃ n, l = replicate n 0%nat).
+  SimplAnd (sum_list l = 0%nat) (∃ n, l = replicate n 0%nat).
 Proof.
-  split.
+  constructor. split; last first.
   - intros [n ->]. rewrite sum_list_replicate; lia.
   - induction l as [ | [ | ] l' IH] => /=; try lia.
     + intros _. by exists 0%nat.
@@ -29,6 +35,9 @@ Proof.
       destruct (IH ltac:(lia)) as [n ->].
       exists (n + 1)%nat. by rewrite Nat.add_1_r.
 Qed.
+Definition simpl_sum_list_nil_sym l :=
+  simpl_and_impl_sym (=) (simpl_sum_list_nil l).
+Global Existing Instance simpl_sum_list_nil_sym | 5.
 
 Global Instance simpl_list_trivial_match {A} (l : list A) :
   SimplAnd (if l is [] then True else False) (l = []).
@@ -37,10 +46,10 @@ Proof. split; solve_goal. Qed.
 Section upstream.
   Context `{!typeG Σ}.
 
-  Lemma subsume_array_insert_id A l ly ty elts elts' i β G :
-    subsume (l ◁ₗ{β} array ly (<[ i := ty ]> elts)) (λ x : A, l ◁ₗ{β} array ly (elts' x)) G
+  Lemma subsume_array_insert_id A M l ly ty elts elts' i β G :
+    subsume (l ◁ₗ{β} array ly (<[ i := ty ]> elts)) M (λ x : A, l ◁ₗ{β} array ly (elts' x)) G
      where `{!CanSolve (elts !! i = Some ty)} :-
-      x ← (l ◁ₗ{β} array ly elts) :>> (λ x : A, l ◁ₗ{β} array ly (elts' x)); return G x.
+      x ← (l ◁ₗ{β} array ly elts) :‖M‖> (λ x : A, l ◁ₗ{β} array ly (elts' x)); return G x.
   Proof. move => ?. by rewrite list_insert_id. Qed.
   Definition subsume_array_insert_id_inst := [instance subsume_array_insert_id].
   Global Existing Instance subsume_array_insert_id_inst | 0.
@@ -106,11 +115,12 @@ End RecieveOneMessageSpecification.
 
 Section RecieveOneMessageProof.
   Context `{!PacketArrivals} `{!typeG Σ}.
+  Local Transparent get_packet_data.
 
   Global Instance simpl_and_npfp_enqueue_func fd_state msg1 msg2:
     SimplAndUnsafe (npfp_enqueue_func (sched_state fd_state) msg1 =
                     npfp_enqueue_func (sched_state fd_state) msg2) (msg1 = msg2) .
-  Proof. by move => ->. Qed.
+  Proof. constructor. by move => ->. Qed.
 
   Lemma packet_data_len pckt:
     length (get_packet_data pckt) ≤ max_int i32.
@@ -233,14 +243,17 @@ Section CheckChannelsProofs.
   Qed.
 
   Global Instance simpl_num_reads_for_ns_nil ns :
-    SimplAndRel (=) (num_reads_for_ns ns) 0%nat (ns = []).
+    SimplAnd (num_reads_for_ns ns = 0%nat) (ns = []).
   Proof. split; by [subst | destruct ns]. Qed.
+  Definition simpl_num_reads_for_ns_nil_sym ns :=
+    simpl_and_impl_sym (=) (simpl_num_reads_for_ns_nil ns).
+  Global Existing Instance simpl_num_reads_for_ns_nil_sym | 5.
 
   Global Instance simpl_num_reads_for_ns_cons ns ns' n :
     SimplAndUnsafe (num_reads_for_ns ns + (S n) = num_reads_for_ns ns')%nat
       (ns' = ns ++ [n]).
   Proof.
-    move => ->. rewrite /num_reads_for_ns => //=.
+    constructor. move => ->. rewrite /num_reads_for_ns => //=.
     rewrite sum_list_with_app length_app => /=. lia.
   Qed.
 
@@ -284,11 +297,10 @@ Section CheckChannelsProofs.
   Proof.
     induction fds in n, fd, init, fd_state, ns |- *.
     - destruct ns => //= _.
-      rewrite (proj1 (simpl_num_reads_for_ns_nil [])); f_equal; lia.
+      f_equal. rewrite /num_reads_for_ns/=. lia.
     - destruct ns as [ | n' ns'] => //= Hlen.
       rewrite IHfds; last lia.
-      f_equal.
-      unfold_opaque num_reads_for_ns => /=; lia.
+      f_equal. rewrite /num_reads_for_ns/=. lia.
   Qed.
 
   Lemma fds_have_n_msgs_same_len fds ns init :
@@ -381,12 +393,12 @@ Section CheckUntilEmptyProofs.
 
   Global Instance simpl_and_rel_num_reads_init (t : nat) (ns : list nat) (ns_list : list (list nat)) :
     SimplAndUnsafe (t + num_reads_for_ns ns = t + num_reads_for_ns_list ns_list)%nat (ns_list = [ns]).
-  Proof. intros ->. auto. Qed.
+  Proof. constructor. intros ->. auto. Qed.
 
   Global Instance simpl_and_rel_num_reads_cons (ns : list nat) (ns_list ns_list' : list (list nat)) :
     SimplAndUnsafe (num_reads_for_ns_list ns_list + num_reads_for_ns ns = num_reads_for_ns_list ns_list')%nat (ns_list' = ns_list ++ [ns]).
   Proof.
-    intros ->. rewrite /num_reads_for_ns_list => /=.
+    constructor. intros ->. rewrite /num_reads_for_ns_list => /=.
     rewrite map_app; simpl; rewrite sum_list_with_app => /=; lia.
   Qed.
 
@@ -497,10 +509,10 @@ Section error_num.
   Global Existing Instance find_in_context_err_no_inst | 1.
   Global Instance related_to_err_no A n' : RelatedTo (λ x : A, is_errno (n' x)) := {| rt_fic := FindErrNo |}.
 
-  Lemma subsume_is_errno A n n' G :
-    subsume (@is_errno Σ n) (λ x : A, is_errno (n' x)) G :-
-      ∃ x, exhale ⌜ n = n' x⌝; return (G x).
-  Proof. iIntros "(%x & -> & ?) ?". iExists x. iFrame. Qed.
+  Lemma subsume_is_errno A M n n' G :
+    subsume (@is_errno Σ n) M (λ x : A, is_errno (n' x)) G :-
+      ∃ x, exhale ⌜n = n' x⌝; return (G x).
+  Proof. iIntros "(%x & -> & ?) ? !>". iExists x. iFrame. Qed.
   Definition subsume_is_errno_inst := [instance subsume_is_errno].
   Global Existing Instance subsume_is_errno_inst.
 

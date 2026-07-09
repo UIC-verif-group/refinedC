@@ -32,10 +32,10 @@ Ltac normalize_autorewrite :=
 
 #[export] Hint Rewrite @drop_0 @take_ge using can_solve : lithium_rewrite.
 #[export] Hint Rewrite @take_app_le @drop_app_ge using can_solve : lithium_rewrite.
-#[export] Hint Rewrite @length_insert @length_app @length_fmap @length_rotate @length_replicate @length_drop : lithium_rewrite.
+#[export] Hint Rewrite @length_insert @length_app @length_fmap @length_rotate @length_replicate @length_drop @length_take : lithium_rewrite.
 #[export] Hint Rewrite <- @fmap_take @fmap_drop : lithium_rewrite.
 #[export] Hint Rewrite @list_insert_fold : lithium_rewrite.
-#[export] Hint Rewrite @list_insert_insert : lithium_rewrite.
+#[export] Hint Rewrite @list_insert_insert_eq : lithium_rewrite.
 #[export] Hint Rewrite @drop_drop : lithium_rewrite.
 #[export] Hint Rewrite @tail_replicate @take_replicate @drop_replicate : lithium_rewrite.
 #[export] Hint Rewrite <- @app_assoc @cons_middle : lithium_rewrite.
@@ -54,7 +54,7 @@ Ltac normalize_autorewrite :=
 #[export] Hint Rewrite keep_factor2_is_power_of_two keep_factor2_min_eq using can_solve : lithium_rewrite.
 #[export] Hint Rewrite keep_factor2_min_1 keep_factor2_twice : lithium_rewrite.
 
-Local Definition lookup_insert_gmap A K `{Countable K} := lookup_insert (M := gmap K) (A := A).
+Local Definition lookup_insert_gmap A K `{Countable K} := lookup_insert_eq (M := gmap K) (A := A).
 #[export] Hint Rewrite lookup_insert_gmap : lithium_rewrite.
 
 (** * Second version of normalization based on typeclasses *)
@@ -128,6 +128,6 @@ Global Hint Extern 5 (Normalize _ (length (replicate _ _)) _) => class_apply nor
 Ltac normalize_tc :=
   first [
       lazymatch goal with
-      | |- ?a = ?b => change_no_check (NormalizeWalk true a b); solve [refine _]
+      | |- ?a = ?b => change_no_check (NormalizeWalk true a b); solve [typeclasses eauto]
       end
     | exact: eq_refl].

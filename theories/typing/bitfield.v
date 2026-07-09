@@ -96,15 +96,15 @@ Section programs.
 
   (* int ↔ bitfield_raw *)
 
-  Lemma subsume_val_int_bitfield_raw A it v n bv T :
-    (∃ x, ⌜n = bv x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ n @ int it) (λ x : A, v ◁ᵥ (bv x) @ bitfield_raw it) T.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. by iFrame. Qed.
+  Lemma subsume_val_int_bitfield_raw A M it v n bv T :
+    (∃ x, ⌜n = bv x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ n @ int it) M (λ x : A, v ◁ᵥ (bv x) @ bitfield_raw it) T.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. by iFrame. Qed.
   Definition subsume_val_int_bitfield_raw_inst := [instance subsume_val_int_bitfield_raw].
   Global Existing Instance subsume_val_int_bitfield_raw_inst.
 
-  Lemma subsume_val_bitfield_raw_int A it v n bv T :
-    (∃ x, ⌜bv = n x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ bv @ bitfield_raw it) (λ x : A, v ◁ᵥ (n x) @ int it) T.
-  Proof. iIntros "[% [-> ?]] ?". iExists _. by iFrame. Qed.
+  Lemma subsume_val_bitfield_raw_int A M it v n bv T :
+    (∃ x, ⌜bv = n x⌝ ∗ T x) ⊢ subsume (v ◁ᵥ bv @ bitfield_raw it) M (λ x : A, v ◁ᵥ (n x) @ int it) T.
+  Proof. iIntros "[% [-> ?]] ? !>". iExists _. by iFrame. Qed.
   Definition subsume_val_bitfield_raw_int_inst := [instance subsume_val_bitfield_raw_int].
   Global Existing Instance subsume_val_bitfield_raw_int_inst.
 
@@ -240,7 +240,8 @@ Section programs.
     { rewrite (bool_decide_ext _ (bv = 0)) //.
       rewrite Hbv (bool_decide_ext _ (b = false)); last by apply bf_cons_bool_singleton_false_iff.
       by destruct b. }
-    iExists _. iFrame. unfold boolean, int; simpl_type. iIntros "(%n&%&%Heq)". move: Heq => /= ?. subst n. done.
+    iExists _. iFrame. unfold boolean, int; simpl_type.
+    iIntros "(%n&%&%Heq) !>". move: Heq => /= ?. subst n. done.
   Qed.
   Definition type_bitfield_raw_is_false_inst := [instance type_bitfield_raw_is_false].
   Global Existing Instance type_bitfield_raw_is_false_inst.
@@ -259,7 +260,7 @@ Section programs.
       rewrite Hbv (bool_decide_ext _ (b = true)); last by apply bf_cons_bool_singleton_true_iff.
       by destruct b. }
     iExists _. iFrame. unfold boolean, int; simpl_type.
-    iIntros "(%n&%&%Heq)". move: Heq => /= ?. subst n. done.
+    iIntros "(%n&%&%Heq) !>". move: Heq => /= ?. subst n. done.
   Qed.
   Definition type_bitfield_raw_is_true_inst := [instance type_bitfield_raw_is_true].
   Global Existing Instance type_bitfield_raw_is_true_inst.
@@ -275,31 +276,31 @@ Section programs.
 
   (* typing rules for bitfield: unfold to bitfield_raw *)
 
-  Lemma simplify_hyp_place_bitfield l β R `{BitfieldDesc R} bv T :
-    (l ◁ₗ{β} bitfield_repr bv @ bitfield_raw bitfield_it -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ{β} bv @ bitfield R) T.
+  Lemma simplify_hyp_place_bitfield l β R `{BitfieldDesc R} bv M T :
+    (l ◁ₗ{β} bitfield_repr bv @ bitfield_raw bitfield_it -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ{β} bv @ bitfield R) M T.
   Proof. done. Qed.
   Definition simplify_hyp_place_bitfield_inst := [instance simplify_hyp_place_bitfield with 0%N].
   Global Existing Instance simplify_hyp_place_bitfield_inst.
 
-  Lemma simplify_goal_place_bitfield l β R `{BitfieldDesc R} bv T :
+  Lemma simplify_goal_place_bitfield l β R `{BitfieldDesc R} bv M T :
     l ◁ₗ{β} bitfield_repr bv @ bitfield_raw bitfield_it ∗ T
-    ⊢ simplify_goal (l ◁ₗ{β} bv @ bitfield R) T.
-  Proof. done. Qed.
+    ⊢ simplify_goal M (l ◁ₗ{β} bv @ bitfield R) T.
+  Proof. by iIntros "? !>". Qed.
   Definition simplify_goal_place_bitfield_inst := [instance simplify_goal_place_bitfield with 0%N].
   Global Existing Instance simplify_goal_place_bitfield_inst.
 
-  Lemma simplify_hyp_val_bitfield v R `{BitfieldDesc R} bv T :
-    (v ◁ᵥ bitfield_repr bv @ bitfield_raw bitfield_it -∗ T)
-    ⊢ simplify_hyp (v ◁ᵥ bv @ bitfield R) T.
+  Lemma simplify_hyp_val_bitfield v R `{BitfieldDesc R} bv M T :
+    (v ◁ᵥ bitfield_repr bv @ bitfield_raw bitfield_it -∗ ‖M‖ T)
+    ⊢ simplify_hyp (v ◁ᵥ bv @ bitfield R) M T.
   Proof. done. Qed.
   Definition simplify_hyp_val_bitfield_inst := [instance simplify_hyp_val_bitfield with 0%N].
   Global Existing Instance simplify_hyp_val_bitfield_inst.
 
-  Lemma simplify_goal_val_bitfield v R `{BitfieldDesc R} bv T :
+  Lemma simplify_goal_val_bitfield v R `{BitfieldDesc R} bv M T :
     v ◁ᵥ bitfield_repr bv @ bitfield_raw bitfield_it ∗ T
-    ⊢ simplify_goal (v ◁ᵥ bv @ bitfield R) T.
-  Proof. done. Qed.
+    ⊢ simplify_goal M (v ◁ᵥ bv @ bitfield R) T.
+  Proof. iIntros "? !>". done. Qed.
   Definition simplify_goal_val_bitfield_inst := [instance simplify_goal_val_bitfield with 0%N].
   Global Existing Instance simplify_goal_val_bitfield_inst.
 

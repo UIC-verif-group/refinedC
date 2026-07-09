@@ -60,18 +60,18 @@ Section padded.
     : LearnAlignment β (padded ty lyty ly) (Some (ly_align ly)).
   Next Obligation. by iIntros (β ty ly lyty l) "(_&%&_)". Qed.
 
-  Lemma simpl_padded_hyp_eq_layout l β ty ly1 ly2 `{!TCFastDone (ly1.(ly_size) = ly2.(ly_size))} T:
-    (l ◁ₗ{β} ty -∗ T)
-    ⊢ simplify_hyp (l ◁ₗ{β} padded ty ly1 ly2) T.
+  Lemma simpl_padded_hyp_eq_layout l β ty ly1 ly2 `{!TCFastDone (ly1.(ly_size) = ly2.(ly_size))} M T:
+    (l ◁ₗ{β} ty -∗ ‖M‖ T)
+    ⊢ simplify_hyp (l ◁ₗ{β} padded ty ly1 ly2) M T.
   Proof. iIntros "HT (?&?&?&?&?)". by iApply "HT". Qed.
   Definition simpl_padded_hyp_eq_layout_inst := [instance simpl_padded_hyp_eq_layout with 0%N].
   Global Existing Instance simpl_padded_hyp_eq_layout_inst.
   (* TODO: should this also work for Shr? *)
-  Lemma simpl_padded_goal_eq_layout l ty ly T:
+  Lemma simpl_padded_goal_eq_layout l ty ly M T:
     ⌜ty.(ty_has_op_type) (UntypedOp ly) MCNone⌝ ∗ l ◁ₗ ty ∗ T
-    ⊢ simplify_goal (l ◁ₗ padded ty ly ly) T.
+    ⊢ simplify_goal M (l ◁ₗ padded ty ly ly) T.
   Proof.
-    iIntros "[% [Hl $]]". iDestruct (ty_aligned with "Hl") as %?; [done|].
+    iIntros "[% [Hl $]] !>". iDestruct (ty_aligned with "Hl") as %?; [done|].
     do 2 iSplit => //. iDestruct (movable_loc_in_bounds with "Hl") as "#Hb"; [done|]. iFrame "Hl Hb".
     iExists []. rewrite heap_mapsto_own_state_nil.
     iSplit. { iPureIntro. rewrite /has_layout_val/ly_offset/ly_size /=. lia. }
@@ -101,10 +101,10 @@ Section padded.
 
   (* Only works for Own since ty might have interior mutability, but
   uninit ty assumes that the values are frozen *)
-  Lemma subsume_padded_uninit A l ly1 ly2 lyty ty T:
+  Lemma subsume_padded_uninit A M l ly1 ly2 lyty ty T:
     (⌜ty.(ty_has_op_type) (UntypedOp lyty) MCNone⌝ ∗ ∀ v, v ◁ᵥ ty -∗
-     subsume (l ◁ₗ uninit ly1) (λ x, l ◁ₗ uninit (ly2 x)) T)
-    ⊢ subsume (l ◁ₗ padded ty lyty ly1) (λ x : A, l ◁ₗ uninit (ly2 x)) T.
+     subsume (l ◁ₗ uninit ly1) M (λ x, l ◁ₗ uninit (ly2 x)) T)
+    ⊢ subsume (l ◁ₗ padded ty lyty ly1) M (λ x : A, l ◁ₗ uninit (ly2 x)) T.
   Proof.
     iIntros "[% HT]". iDestruct 1 as ([? ?] ?) "(Hb & Hl & Hr)".
     iDestruct (ty_deref with "Hl") as (v1) "[Hl Hv1]"; [done|].
@@ -119,11 +119,11 @@ Section padded.
   Definition subsume_padded_uninit_inst := [instance subsume_padded_uninit].
   Global Existing Instance subsume_padded_uninit_inst.
 
-  Lemma subsume_uninit_padded A l β ly lyty T:
+  Lemma subsume_uninit_padded A M l β ly lyty T:
     (∃ x, ⌜lyty x ⊑ ly⌝ ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} uninit ly) (λ x : A, l ◁ₗ{β} padded (uninit (lyty x)) (lyty x) ly) T.
+    ⊢ subsume (l ◁ₗ{β} uninit ly) M (λ x : A, l ◁ₗ{β} padded (uninit (lyty x)) (lyty x) ly) T.
   Proof.
-    iDestruct 1 as (? [? ?]) "?". iIntros "Hl". iExists _. iFrame.
+    iDestruct 1 as (? [? ?]) "?". iIntros "Hl !>". iExists _. iFrame.
     iDestruct (bytewise_loc_in_bounds with "Hl") as "#$".
     iDestruct (split_bytewise with "Hl") as "[Hl $]" => //.
     rewrite /ty_own/=. iDestruct "Hl" as (????) "Hl".
@@ -141,7 +141,7 @@ Section padded.
   Proof.
     iIntros "[% HT]" (Φ) "Hl".
     iDestruct (apply_subsume_place_true with "Hl []") as "Hl".
-    { iApply (subsume_uninit_padded _ _ _ _ (λ _, sl)). by iExists tt. }
+    { iApply (subsume_uninit_padded _ _ _ _ _ (λ _, sl)). by iExists tt. }
     iApply "HT". iDestruct "Hl" as "[$ [$ [$ [Hl $]]]]". by rewrite uninit_struct_equiv.
   Qed.
   Definition type_place_padded_uninit_struct_inst := [instance type_place_padded_uninit_struct].
@@ -153,14 +153,14 @@ Section padded.
   Proof. iIntros "(?&?&?&?&?)". iFrame. iIntros (?) "$". Qed.
 
   (* If lyty is the same, then ly also must be the same. *)
-  Lemma padded_mono A l β ty1 ty2 ly1 ly2 lyty T:
-    (l ◁ₗ{β} ty1 -∗ ∃ x, ⌜ly1 = ly2 x⌝ ∗ l ◁ₗ{β} (ty2 x) ∗ T x)
-    ⊢ subsume (l ◁ₗ{β} padded ty1 lyty ly1) (λ x : A, l ◁ₗ{β} padded (ty2 x) lyty (ly2 x)) T.
+  Lemma padded_mono A M l β ty1 ty2 ly1 ly2 lyty T:
+    (l ◁ₗ{β} ty1 -∗ ‖M‖ ∃ x, ⌜ly1 = ly2 x⌝ ∗ l ◁ₗ{β} (ty2 x) ∗ T x)
+    ⊢ subsume (l ◁ₗ{β} padded ty1 lyty ly1) M (λ x : A, l ◁ₗ{β} padded (ty2 x) lyty (ly2 x)) T.
   Proof.
     iIntros "HT Hl".
     iDestruct (padded_focus with "Hl") as "[Hl Hpad]".
-    iDestruct ("HT" with "[$]") as (? ->) "[? HT]".
-    iExists _. iFrame "HT". by iApply "Hpad".
+    iMod ("HT" with "[$]") as (? ->) "[? HT]".
+    iModIntro. iFrame "HT". by iApply "Hpad".
   Qed.
   Definition padded_mono_inst := [instance padded_mono].
   Global Existing Instance padded_mono_inst.

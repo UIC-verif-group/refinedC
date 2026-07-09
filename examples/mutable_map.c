@@ -70,7 +70,7 @@ void fsm_realloc_if_necessary(struct fixed_size_map *m);
  [[rc::lemmas("fsm_invariant_init")]]
  [[rc::tactics("all: try by apply/list_subequiv_split; solve_goal.")]]
  [[rc::tactics("all: try by rewrite length_filter_replicate_True; solve_goal.")]]
- [[rc::tactics("all: try by rewrite !replicate_O; solve_goal.")]]
+ [[rc::tactics("all: try by rewrite (replicate_O _ (len-i)); [solve_goal | lia].")]]
 void fsm_init(struct fixed_size_map *m, size_t len) {
   size_t i;
   void *storage = xmalloc(sizeof(struct item) * len);

@@ -114,7 +114,7 @@ Lemma npfp_enqueue_add_msg_to_q1 qs a msg b:
   list_subequiv [b] qs (add_msg_to_q qs a msg).
 Proof.
   move => ->.
-  rewrite /add_msg_to_q -list_subequiv_insert_in_l; last by rewrite elem_of_list_singleton //=.
+  rewrite /add_msg_to_q -list_subequiv_insert_in_l; last by rewrite list_elem_of_singleton //=.
   naive_solver.
 Qed.
 
@@ -134,7 +134,7 @@ Lemma npfp_enqueue_create_bitmap_addmsg2 qs prio msg i :
   create_bitmap (add_msg_to_q qs prio msg) !! i = Some true.
 Proof.
   move => -> ?. rewrite /create_bitmap/add_msg_to_q.
-  apply list_lookup_fmap_Some. rewrite list_lookup_insert //. eexists _. split; [done|].
+  apply list_lookup_fmap_Some. rewrite list_lookup_insert_eq //. eexists _. split; [|done].
   by rewrite bool_decide_true// => /app_eq_nil [??].
 Qed.
 
@@ -269,7 +269,7 @@ Lemma npfp_dequeue_create_bitmap_false sched_state y :
   !! Z.to_nat (find_highest_prio (create_bitmap (msg_qs sched_state))) = Some false.
 Proof.
   move => ?? ? Htail. apply list_lookup_fmap_Some. eexists [].
-  split; [|solve_goal]. rewrite -Htail.
+  split; [solve_goal|]. rewrite -Htail.
   destruct (msg_qs (npfp_dequeue_func sched_state) !! Z.to_nat (find_highest_prio (create_bitmap (msg_qs sched_state)))) eqn: Heq.
   - f_equal. symmetry. by eapply npfp_dequeue_has_highest_pending_prio.
   - move: Heq => /lookup_ge_None. solve_goal.

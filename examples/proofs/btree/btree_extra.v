@@ -37,7 +37,7 @@ Qed.
 Lemma drop_elem_of {A : Type} (x : A) (n : nat) (l : list A) :
   x ∈ drop n l ↔ (∃ i, (n ≤ i)%nat ∧ l !! i = Some x).
 Proof.
-  rewrite elem_of_list_lookup. split.
+  rewrite list_elem_of_lookup. split.
   - intros [i H]. rewrite lookup_drop in H.
     exists (n + i)%nat. split; [ by lia | done ].
   - intros [i [H1 H2]]. exists (i - n)%nat.
@@ -137,8 +137,8 @@ Lemma elem_of_zip {A B} (l1 : list A) (l2 : list B) (x : A) (y : B) :
   (∃ i, l1 !! i = Some x ∧ l2 !! i = Some y) ↔ (x, y) ∈ zip l1 l2.
 Proof.
   split.
-  - move => [i H]. apply lookup_zip in H. apply elem_of_list_lookup. by exists i.
-  - move => /elem_of_list_lookup [i H]. exists i. by apply lookup_zip.
+  - move => [i H]. apply lookup_zip in H. apply list_elem_of_lookup. by exists i.
+  - move => /list_elem_of_lookup [i H]. exists i. by apply lookup_zip.
 Qed.
 
 Lemma lookup_list_to_map_zip_None {V : Type} (ks : list Z) (vs : list V) (k : Z) :
@@ -203,7 +203,7 @@ Section defs.
   Proof. split; destruct r; by naive_solver. Qed.
 
   Global Instance simpl_eq_cons_app {A} (x : A) (l1 l2 : list A) :
-    SimplAndRel (=) (x :: l1) (l2 ++ l1) ([x] = l2).
+    SimplAnd (x :: l1 = l2 ++ l1) ([x] = l2).
   Proof.
     assert (x :: l1 = l2 ++ l1 → [x] = l2); last (split; by naive_solver). move => Heq.
     assert (length (x :: l1) = length (l2 ++ l1)) as Hlen by by rewrite Heq.
@@ -212,6 +212,9 @@ Section defs.
     destruct l2 as [|? l2]; last by inversion H0.
     by inversion Heq.
   Qed.
+  Definition simpl_eq_cons_app_sym {A} (x : A) (l1 l2 : list A) :=
+    simpl_and_impl_sym (=) (simpl_eq_cons_app x l1 l2).
+  Global Existing Instance simpl_eq_cons_app_sym | 5.
 
   (* The arguments denote the following:
       - [o] is the order of the B-tree.
@@ -311,7 +314,7 @@ Section defs.
   Lemma btree_invariant_keys_in_range {o r n ks vs cs} :
     btree_invariant o r n ks vs cs → ∀ k, k ∈ ks → br_min r ≤ k ≤ br_max r.
   Proof.
-    move => Hinv k Hk. apply elem_of_list_lookup in Hk as [i Hk]. assert (br_map r ≠ ∅).
+    move => Hinv k Hk. apply list_elem_of_lookup in Hk as [i Hk]. assert (br_map r ≠ ∅).
     { by eapply btree_invariant_has_key_non_empty. }
     rewrite /btree_invariant bool_decide_true // /= in Hinv.
     destruct Hinv as (Hlen&->&_&_&_&_&_&HSS&HB&_&_&_&_&_&Heq). apply HB.
@@ -339,7 +342,7 @@ Section defs.
       rewrite cons_middle app_assoc in HSS. apply StronglySorted_app_1_l in HSS.
       assert (br_min d - 1 < k); last by lia.
       assert (br_min d - 1 ∈ take i ks).
-      { apply elem_of_list_lookup. exists (i - 1)%nat. rewrite lookup_take //. by lia. }
+      { apply list_elem_of_lookup. exists (i - 1)%nat. rewrite lookup_take_lt //. by lia. }
       apply (StronglySorted_last_lt _ _ _ HSS); [ apply elem_of_app; by left | .. | by rewrite last_snoc ].
       eapply (StronglySorted_app_1_elem_of _ _ _ (br_min d - 1) k) in HSS; [ lia | done | by set_solver ].
     - destruct (decide (i = length vs)) as [->|Hi]; first by rewrite HMlast.
@@ -347,7 +350,7 @@ Section defs.
       apply StronglySorted_app_1_r in HSS. apply StronglySorted_inv in HSS as [HSS Hlt].
       assert (k < br_max d + 1); last by lia.
       assert (br_max d + 1 ∈ drop i ks).
-      { apply elem_of_list_lookup. exists 0%nat. by rewrite lookup_drop // -plus_n_O. }
+      { apply list_elem_of_lookup. exists 0%nat. by rewrite lookup_drop // -plus_n_O. }
       by apply (Forall_forall (Z.lt k) (drop i ks)).
   Qed.
 
@@ -378,7 +381,7 @@ Section defs.
       rewrite (take_app_length' cs' [d]); last done.
       assert (⋃ (br_map <$> cs') !! k = None) as Hl.
       { apply union_list_lookup_None => m Hm.
-        apply elem_of_list_lookup_1 in Hm as [j Hm].
+        apply list_elem_of_lookup_1 in Hm as [j Hm].
         rewrite list_lookup_fmap in Hm.
         assert (∃ dj, cs' !! j = Some dj) as [dj Hdj].
         { destruct (cs' !! j) eqn:HEq; [ by eauto | by inversion Hm ]. }
@@ -403,7 +406,7 @@ Section defs.
       by rewrite union_list_app lookup_union_r // /= right_id_L.
     - assert (⋃ (br_map <$> drop (S i) cs) !! k = None) as Hr.
       { apply union_list_lookup_None => m Hm.
-        apply elem_of_list_lookup_1 in Hm as [j Hm].
+        apply list_elem_of_lookup_1 in Hm as [j Hm].
         rewrite list_lookup_fmap lookup_drop in Hm.
         assert (∃ dj, cs !! (S i + j)%nat = Some dj) as [dj Hdj].
         { destruct (cs !! (S i + j)%nat) eqn:HEq; [ by eauto | by inversion Hm ]. }
@@ -422,12 +425,12 @@ Section defs.
         move: XX => /Forall_forall => XX. apply XX. done. }
       assert (⋃ (br_map <$> take i     cs) !! k = None) as Hl.
       { clear Hr. apply union_list_lookup_None => m Hm.
-        apply elem_of_list_lookup_1 in Hm as [j Hm].
+        apply list_elem_of_lookup_1 in Hm as [j Hm].
         rewrite list_lookup_fmap in Hm.
         assert (j < i)%nat.
         { apply mk_is_Some in Hm. move: Hm => /fmap_is_Some /lookup_lt_is_Some.
           rewrite length_take. lia. }
-        rewrite lookup_take in Hm; last done.
+        rewrite lookup_take_lt in Hm; last done.
         assert (∃ dj, cs !! j = Some dj) as [dj Hdj].
         { destruct (cs !! j) eqn:HEq; [ by eauto | by inversion Hm ]. }
         destruct (decide (j = length vs)) as [Heq|Hne].

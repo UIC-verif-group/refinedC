@@ -1,10 +1,10 @@
 ; Add project-wide flags here.
 (env
  (dev
-  (binaries (tools/coqc_timing.sh as coqc))
+  (binaries (tools/rocq_timing.sh as rocq))
   (flags :standard))
  (release
-  (binaries (tools/coqc_timing.sh as coqc))
+  (binaries (tools/rocq_timing.sh as rocq))
   (flags :standard)))
 
 (install

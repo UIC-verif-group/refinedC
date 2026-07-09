@@ -60,28 +60,28 @@ Notation "'∃ₜ' x .. y , p" := (ty_of_rty (tyexists (fun x => .. (ty_of_rty (
 Section tyexist.
   Context `{!typeG Σ} {A : Type}.
 
-  Lemma simplify_hyp_place_tyexists x l β (ty : A → _) T:
-    (l ◁ₗ{β} ty x -∗ T) ⊢ simplify_hyp (l◁ₗ{β} x @ tyexists ty) T.
+  Lemma simplify_hyp_place_tyexists x l β (ty : A → _) M T:
+    (l ◁ₗ{β} ty x -∗ ‖M‖ T) ⊢ simplify_hyp (l◁ₗ{β} x @ tyexists ty) M T.
   Proof. iIntros "HT Hl". rewrite tyexists_eq. by iApply "HT". Qed.
   Definition simplify_hyp_place_tyexists_inst :=
     [instance simplify_hyp_place_tyexists with 0%N].
   Global Existing Instance simplify_hyp_place_tyexists_inst.
 
-  Lemma simplify_goal_place_tyexists x l β (ty : A → _) T:
-    l ◁ₗ{β} ty x ∗ T ⊢ simplify_goal (l◁ₗ{β} x @ tyexists ty) T.
-  Proof. iIntros "[? $]". by rewrite tyexists_eq. Qed.
+  Lemma simplify_goal_place_tyexists x l β (ty : A → _) M T:
+    l ◁ₗ{β} ty x ∗ T ⊢ simplify_goal M (l◁ₗ{β} x @ tyexists ty) T.
+  Proof. iIntros "[? $] !>". by rewrite tyexists_eq. Qed.
   Definition simplify_goal_place_tyexists_inst := [instance simplify_goal_place_tyexists with 0%N].
   Global Existing Instance simplify_goal_place_tyexists_inst.
 
-  Lemma simplify_hyp_val_tyexists x v ty T :
-    (v ◁ᵥ ty x -∗ T) ⊢ simplify_hyp (v◁ᵥ x @ tyexists (A:=A) ty) T.
+  Lemma simplify_hyp_val_tyexists x v ty M T :
+    (v ◁ᵥ ty x -∗ ‖M‖ T) ⊢ simplify_hyp (v◁ᵥ x @ tyexists (A:=A) ty) M T.
   Proof. iIntros "HT Hl". rewrite tyexists_eq. by iApply "HT". Qed.
   Definition simplify_hyp_val_tyexists_inst := [instance simplify_hyp_val_tyexists with 0%N].
   Global Existing Instance simplify_hyp_val_tyexists_inst.
 
-  Lemma simplify_goal_val_tyexists x v ty T:
-    v ◁ᵥ ty x ∗ T ⊢ simplify_goal (v◁ᵥ x @ tyexists (A:=A) ty) T.
-  Proof. iIntros "[? $]". by rewrite tyexists_eq. Qed.
+  Lemma simplify_goal_val_tyexists x v ty M T:
+    v ◁ᵥ ty x ∗ T ⊢ simplify_goal M (v◁ᵥ x @ tyexists (A:=A) ty) T.
+  Proof. iIntros "[? $] !>". by rewrite tyexists_eq. Qed.
   Definition simplify_goal_val_tyexists_inst := [instance simplify_goal_val_tyexists with 0%N].
   Global Existing Instance simplify_goal_val_tyexists_inst.
 

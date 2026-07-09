@@ -411,11 +411,11 @@ Section proofs.
   Qed.
   Definition expr_load_alt_inst := [instance expr_load_alt].
 
-  Lemma subsume_points_to_points_to A vl v1 v2 G :
-    subsume (vl ↦ v1) (λ x : A, vl ↦ (v2 x)) G :-
+  Lemma subsume_points_to_points_to A M vl v1 v2 G :
+    subsume (vl ↦ v1) M (λ x : A, vl ↦ (v2 x)) G :-
      ∃ x, exhale ⌜v1 = v2 x⌝;
      return G x.
-  Proof. liTUnfold. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+  Proof. liTUnfold. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_points_to_points_to_inst := [instance subsume_points_to_points_to].
   Global Existing Instance subsume_points_to_points_to_inst.
 
@@ -516,9 +516,9 @@ Section proofs.
     repeat liTStep; liShow.
   Abort.
 
-  Lemma simpl_list_empty xs G :
-    simplify_goal (is_list #NULL xs) G :- exhale ⌜xs = []⌝; return G.
-  Proof. liTUnfold. iIntros "[-> $]". by unfold_opaque is_list. Qed.
+  Lemma simpl_list_empty xs M G :
+    simplify_goal M (is_list #NULL xs) G :- exhale ⌜xs = []⌝; return G.
+  Proof. liTUnfold. iIntros "[-> $] !>". by unfold_opaque is_list. Qed.
   Definition simpl_list_empty_inst := [instance simpl_list_empty with 50%N].
   Global Existing Instance simpl_list_empty_inst.
 
@@ -548,7 +548,7 @@ Section proofs.
   Lemma find_list v G:
     find_in_context (FindList v) G :-
       pattern: xs, is_list v xs; return G (is_list v xs).
-  Proof. iDestruct 1 as (xs) "[Hl HT]". iExists _. by iFrame. Qed.
+  Proof. iDestruct 1 as (xs) "[Hl HT]". iExists (is_list _ _). by iFrame. Qed.
   Definition find_list_inst :=
     [instance find_list with FICSyntactic].
   Global Existing Instance find_list_inst | 1.
@@ -556,26 +556,26 @@ Section proofs.
   Lemma find_list_points_to v G:
     find_in_context (FindList v) G :-
       pattern: v2, v ↦ v2; return G (v ↦ v2).
-  Proof. iDestruct 1 as (?) "[Hl HT]". iExists _. by iFrame. Qed.
+  Proof. iDestruct 1 as (?) "[Hl HT]". iExists (_ ↦ _)%I. by iFrame. Qed.
   Definition find_list_points_to_inst :=
     [instance find_list_points_to with FICSyntactic].
   Global Existing Instance find_list_points_to_inst | 10.
 
-  Lemma subsume_list_list A v xs1 xs2 G :
-    subsume (is_list v xs1) (λ x : A, is_list v (xs2 x)) G :-
+  Lemma subsume_list_list A M v xs1 xs2 G :
+    subsume (is_list v xs1) M (λ x : A, is_list v (xs2 x)) G :-
      ∃ x, exhale ⌜xs1 = xs2 x⌝;
      return G x.
-  Proof. liTUnfold. iIntros "[% [-> ?]] ?". iExists _. iFrame. Qed.
+  Proof. liTUnfold. iIntros "[% [-> ?]] ? !>". iExists _. iFrame. Qed.
   Definition subsume_list_list_inst := [instance subsume_list_list].
   Global Existing Instance subsume_list_list_inst.
 
-  Lemma subsume_points_to_list A vl v xs G :
-    subsume (vl ↦ v) (λ x : A, is_list vl (xs x)) G :-
+  Lemma subsume_points_to_list A M vl v xs G :
+    subsume (vl ↦ v) M (λ x : A, is_list vl (xs x)) G :-
      ∃ x v1 v2 xs',
      exhale ⌜v = (v1, v2)%V⌝ ∗ is_list v2 xs' ∗ ⌜xs x = v1 :: xs'⌝;
      return G x.
   Proof.
-    liTUnfold. iIntros "[% [% [% [% [[-> [Hl %Hxs]] ?]]]]] ?".
+    liTUnfold. iIntros "[% [% [% [% [[-> [Hl %Hxs]] ?]]]]] ? !>".
     iExists _. iFrame. rewrite Hxs is_list_cons. iExists _. iFrame.
   Qed.
   Definition subsume_points_to_list_inst := [instance subsume_points_to_list].
@@ -734,8 +734,8 @@ Section proofs.
   Global Instance related_to_fn_ok A v X pre post : RelatedTo (λ x : A, fn_ok v X (pre x) (post x)) | 100
     := {| rt_fic := FindFnOk v |}.
 
-  Lemma subsume_fn A v X pre1 pre2 post1 post2 G :
-    subsume (fn_ok v X pre1 post1) (λ x : A, fn_ok v X pre2 post2) G :-
+  Lemma subsume_fn A M v X pre1 pre2 post1 post2 G :
+    subsume (fn_ok v X pre1 post1) M (λ x : A, fn_ok v X pre2 post2) G :-
      and:
      | drop_spatial;
        ∀ x v, inhale pre2 x v;
@@ -745,7 +745,7 @@ Section proofs.
        done
      | ∃ x, return G x.
   Proof.
-    liTUnfold. iIntros "[#Hsub [% ?]] Hfn". iExists _. iFrame. unfold fn_ok.
+    liTUnfold. iIntros "[#Hsub [% ?]] Hfn !>". iExists _. iFrame. unfold fn_ok.
     iDestruct "Hfn" as "#[%[%[%[-> Hwp]]]]".
     iModIntro. iExists _, _, _. iSplit; [done|].
     iIntros (??) "?". iDestruct ("Hsub" with "[$]") as (?) "[Hpre1 HWP]".
@@ -774,8 +774,8 @@ Section proofs.
   Definition contains_one (contains : val) : val := λ: "x",
       contains ("x", (λ: "y", "y" = #1)%V).
 
-  Lemma simpl_fn X f a e pre post G :
-    simplify_goal (fn_ok (RecV f a e) X pre post) G :-
+  Lemma simpl_fn X f a e pre post M G :
+    simplify_goal M (fn_ok (RecV f a e) X pre post) G :-
       and:
       | drop_spatial;
         ∀ (x : X) v vr,
@@ -785,14 +785,14 @@ Section proofs.
         exhale post x v';
         done
       | return G.
-  Proof. liTUnfold. iIntros "[Hsub $]". by iApply prove_fn_ok. Qed.
+  Proof. liTUnfold. iIntros "[Hsub $] !>". by iApply prove_fn_ok. Qed.
   Definition simpl_fn_inst := [instance simpl_fn with 50%N].
   Global Existing Instance simpl_fn_inst.
 
   (* TODO: upstream? *)
   Global Instance simpl_fmap_elem_of {A B} x (xs : list A) (f : A → B) :
     SimplBoth (x ∈ f <$> xs) (∃ y, x = f y ∧ y ∈ xs).
-  Proof. unfold SimplBoth. by set_unfold. Qed.
+  Proof. constructor. by set_unfold. Qed.
 
   Lemma contains_one_correct contains :
     fn_ok contains (val * list val)

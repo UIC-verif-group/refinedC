@@ -13,7 +13,7 @@
 extern int *__builtin_errno(void);
 
 [[rc::parameters("data : {list Z}", "fd : Z", "l : loc", "t1 : nat", "errno : Z")]]
-[[rc::args("fd @ int<i32>", "l @ &own<{uninit (mk_array_layout u8 (Z.to_nat max_msg_len))}>", "max_msg_len @ int<u64>")]]
+[[rc::args("fd @ int<i32>", "l @ &own<{uninit (mk_array_layout u8 (Z.to_nat max_msg_len))}>", "max_msg_len @ int<size_t>")]]
 [[rc::requires("[is_errno errno]")]]
 [[rc::requires("[curr_read_index t1]")]]
 [[rc::ensures("[curr_read_index (t1 + 1%nat)]")]]
